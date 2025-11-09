@@ -31,6 +31,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       onClick: () => router.push('/dashboard'),
     },
     {
+      key: '/dashboard/demo',
+      icon: <RocketOutlined />,
+      label: 'Demo',
+      onClick: () => router.push('/dashboard/demo'),
+    },
+    {
       key: '/dashboard/users',
       icon: <UserOutlined />,
       label: '用户管理',
