@@ -18,6 +18,13 @@ interface Wallet {
   status: string
   created_at: number
   updated_at: number
+  hyperliquid?: {
+    account_value: string      // 总资产
+    unrealized_pnl: string     // 未实现盈亏
+    margin_used: string        // 保证金
+    withdrawable: string       // 可提现
+    is_registered: boolean     // 是否已注册
+  }
 }
 
 // 跟单列表数据
@@ -102,6 +109,7 @@ export default function DemoPage() {
   // 存款相关状态
   const [depositModalVisible, setDepositModalVisible] = useState(false)
   const [depositWallet, setDepositWallet] = useState<Wallet | null>(null)
+  const [depositLoading, setDepositLoading] = useState(false)
 
   // 获取钱包列表
   const fetchWallets = async () => {
@@ -182,9 +190,83 @@ export default function DemoPage() {
   }
 
   // 确认已转账
-  const handleConfirmDeposit = () => {
-    // TODO: 这里可以调用后端接口记录存款请求
-    handleCloseDepositModal()
+  const handleConfirmDeposit = async () => {
+    if (!depositWallet) return
+
+    setDepositLoading(true)
+    try {
+      const response = await apiClient<{
+        success: boolean
+        message: string
+        balance: string
+        old_status: string
+        new_status: string
+        next_action: string
+        requires_action: boolean
+      }>(`/api/v1/wallet/${depositWallet.id}/confirm-deposit`, {
+        method: 'POST',
+        body: JSON.stringify({}), // 使用默认最低金额 15 USDC
+      })
+
+      if (response.success) {
+        message.success(response.message)
+        message.info(`当前余额: ${response.balance} USDC`)
+        
+        if (response.requires_action) {
+          message.info(response.next_action, 5)
+        }
+
+        // 刷新钱包列表以显示最新状态
+        await fetchWallets()
+        handleCloseDepositModal()
+      } else {
+        message.warning(response.message)
+        if (response.next_action) {
+          message.info(response.next_action, 5)
+        }
+      }
+    } catch (error: any) {
+      message.error(`确认失败: ${error.message}`)
+    } finally {
+      setDepositLoading(false)
+    }
+  }
+
+  // 钱包状态配置
+  const getStatusConfig = (status: string) => {
+    const configs: Record<string, { color: string; text: string }> = {
+      init: { color: 'default', text: '未激活' },
+      pending: { color: 'processing', text: '处理中' },
+      active: { color: 'success', text: '已激活' },
+      disabled: { color: 'error', text: '已禁用' },
+      deleted: { color: 'default', text: '已删除' },
+    }
+    return configs[status] || { color: 'default', text: status }
+  }
+
+  // 格式化金额显示
+  const formatUSD = (value: string | undefined) => {
+    if (!value || value === '0' || value === '0.00') {
+      return <span style={{ color: '#999' }}>$0.00</span>
+    }
+    const num = parseFloat(value)
+    if (isNaN(num)) {
+      return <span style={{ color: '#999' }}>--</span>
+    }
+    const formatted = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(num)
+    
+    // 根据盈亏显示颜色
+    if (num > 0) {
+      return <span style={{ color: '#52c41a', fontWeight: 500 }}>{formatted}</span>
+    } else if (num < 0) {
+      return <span style={{ color: '#ff4d4f', fontWeight: 500 }}>{formatted}</span>
+    }
+    return <span>{formatted}</span>
   }
 
   // 组件挂载时获取钱包列表
@@ -213,42 +295,54 @@ export default function DemoPage() {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
-      width: 80,
-      render: (status: string) => (
-        <Tag color={status === 'active' ? 'green' : 'red'}>
-          {status === 'active' ? '激活' : '禁用'}
-        </Tag>
-      ),
+      width: 100,
+      render: (status: string) => {
+        const config = getStatusConfig(status)
+        return <Tag color={config.color}>{config.text}</Tag>
+      },
     },
     {
       title: '总资产',
       key: 'totalAssets',
       width: 130,
-      render: () => <span style={{ color: '#999' }}>--</span>,
+      render: (_, record: Wallet) => formatUSD(record.hyperliquid?.account_value),
     },
     {
       title: '未实现盈亏',
       key: 'unrealizedPnl',
-      width: 130,
-      render: () => <span style={{ color: '#999' }}>--</span>,
+      width: 140,
+      render: (_, record: Wallet) => {
+        const value = record.hyperliquid?.unrealized_pnl
+        if (!value || value === '0' || value === '0.00') {
+          return <span style={{ color: '#999' }}>$0.00</span>
+        }
+        const num = parseFloat(value)
+        if (isNaN(num)) {
+          return <span style={{ color: '#999' }}>--</span>
+        }
+        const formatted = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+          signDisplay: 'always', // 显示 +/- 符号
+        }).format(num)
+        
+        const color = num >= 0 ? '#52c41a' : '#ff4d4f'
+        return <span style={{ color, fontWeight: 500 }}>{formatted}</span>
+      },
     },
     {
       title: '保证金',
       key: 'margin',
       width: 130,
-      render: () => <span style={{ color: '#999' }}>--</span>,
+      render: (_, record: Wallet) => formatUSD(record.hyperliquid?.margin_used),
     },
     {
       title: '可提现',
       key: 'withdrawable',
       width: 130,
-      render: () => <span style={{ color: '#999' }}>--</span>,
-    },
-    {
-      title: '余额',
-      key: 'balance',
-      width: 130,
-      render: () => <span style={{ color: '#999' }}>--</span>,
+      render: (_, record: Wallet) => formatUSD(record.hyperliquid?.withdrawable),
     },
     {
       title: '操作',
@@ -495,9 +589,62 @@ export default function DemoPage() {
     },
   ]
 
+  // 计算总资产统计
+  const calculateTotals = () => {
+    let totalAssets = 0
+    let totalPnl = 0
+    let totalMargin = 0
+    let totalWithdrawable = 0
+
+    wallets.forEach(wallet => {
+      if (wallet.hyperliquid?.is_registered) {
+        totalAssets += parseFloat(wallet.hyperliquid.account_value || '0')
+        totalPnl += parseFloat(wallet.hyperliquid.unrealized_pnl || '0')
+        totalMargin += parseFloat(wallet.hyperliquid.margin_used || '0')
+        totalWithdrawable += parseFloat(wallet.hyperliquid.withdrawable || '0')
+      }
+    })
+
+    return { totalAssets, totalPnl, totalMargin, totalWithdrawable }
+  }
+
+  const totals = calculateTotals()
+
   return (
     <DashboardLayout>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        {/* 总资产概览卡片 */}
+        {wallets.length > 0 && (
+          <Card>
+            <Space size="large" style={{ width: '100%', justifyContent: 'space-around' }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ color: '#999', fontSize: 14 }}>总资产</div>
+                <div style={{ fontSize: 24, fontWeight: 'bold', marginTop: 8 }}>
+                  {formatUSD(totals.totalAssets.toFixed(2))}
+                </div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ color: '#999', fontSize: 14 }}>未实现盈亏</div>
+                <div style={{ fontSize: 24, fontWeight: 'bold', marginTop: 8 }}>
+                  {totals.totalPnl >= 0 ? '+' : ''}{formatUSD(totals.totalPnl.toFixed(2))}
+                </div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ color: '#999', fontSize: 14 }}>总保证金</div>
+                <div style={{ fontSize: 24, fontWeight: 'bold', marginTop: 8 }}>
+                  {formatUSD(totals.totalMargin.toFixed(2))}
+                </div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ color: '#999', fontSize: 14 }}>可提现</div>
+                <div style={{ fontSize: 24, fontWeight: 'bold', marginTop: 8 }}>
+                  {formatUSD(totals.totalWithdrawable.toFixed(2))}
+                </div>
+              </div>
+            </Space>
+          </Card>
+        )}
+
         {/* 第一部分：我的钱包列表 */}
         <Card
           title="我的钱包"
@@ -639,6 +786,7 @@ export default function DemoPage() {
             walletName={depositWallet.name}
             onClose={handleCloseDepositModal}
             onConfirm={handleConfirmDeposit}
+            loading={depositLoading}
           />
         )}
 

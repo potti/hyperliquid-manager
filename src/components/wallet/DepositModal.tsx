@@ -10,7 +10,8 @@ interface DepositModalProps {
   walletAddress: string
   walletName: string
   onClose: () => void
-  onConfirm: () => void
+  onConfirm: () => Promise<void>
+  loading?: boolean
 }
 
 export default function DepositModal({
@@ -19,6 +20,7 @@ export default function DepositModal({
   walletName,
   onClose,
   onConfirm,
+  loading = false,
 }: DepositModalProps) {
   // 复制钱包地址
   const handleCopyAddress = () => {
@@ -27,9 +29,8 @@ export default function DepositModal({
   }
 
   // 确认已转账
-  const handleConfirmTransfer = () => {
-    message.success('已记录您的存款确认，请等待资金到账')
-    onConfirm()
+  const handleConfirmTransfer = async () => {
+    await onConfirm()
   }
 
   const depositSteps = [
@@ -63,10 +64,15 @@ export default function DepositModal({
       onCancel={onClose}
       width={650}
       footer={[
-        <Button key="cancel" onClick={onClose}>
+        <Button key="cancel" onClick={onClose} disabled={loading}>
           取消
         </Button>,
-        <Button key="confirm" type="primary" onClick={handleConfirmTransfer}>
+        <Button 
+          key="confirm" 
+          type="primary" 
+          onClick={handleConfirmTransfer}
+          loading={loading}
+        >
           确认已转
         </Button>,
       ]}
