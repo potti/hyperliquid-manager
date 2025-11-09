@@ -1,43 +1,26 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
 import { Card, Typography, Row, Col, Statistic, Space, Avatar } from 'antd'
 import { UserOutlined, TeamOutlined, RiseOutlined, DollarOutlined } from '@ant-design/icons'
 import DashboardLayout from '@/components/DashboardLayout'
+import { useAuth } from '@/contexts/AuthContext'
 
 const { Title } = Typography
 
 export default function Dashboard() {
-  const { data: session, status } = useSession()
-  const router = useRouter()
-
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin')
-    }
-  }, [status, router])
-
-  if (status === 'loading') {
-    return <div>Loading...</div>
-  }
-
-  if (!session) {
-    return null
-  }
+  const { user } = useAuth()
 
   return (
     <DashboardLayout>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         <Card>
           <Space>
-            <Avatar size={64} src={session.user?.image} icon={<UserOutlined />} />
+            <Avatar size={64} icon={<UserOutlined />} />
             <div>
               <Title level={3} style={{ margin: 0 }}>
-                欢迎回来, {session.user?.name}
+                欢迎回来, {user?.name}
               </Title>
-              <p style={{ color: '#666', margin: 0 }}>{session.user?.email}</p>
+              <p style={{ color: '#666', margin: 0 }}>{user?.email}</p>
             </div>
           </Space>
         </Card>

@@ -3,10 +3,14 @@
  * 用于与后端 API 通信，自动处理认证和错误
  */
 
-import { getSession } from 'next-auth/react'
-
 // 后端 API 基础 URL
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+
+// 获取认证 token
+function getAuthToken(): string | null {
+  if (typeof window === 'undefined') return null
+  return localStorage.getItem('auth_token')
+}
 
 /**
  * API 响应类型
@@ -43,27 +47,16 @@ export async function apiClient<T = any>(
   options: RequestInit = {}
 ): Promise<T> {
   try {
-    // 获取当前 session
-    const session = await getSession()
-
     // 构建请求头
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...options.headers,
     }
 
-    // 如果有 session，添加 Authorization header
-    if (session?.user) {
-      // 这里可以使用不同的认证方式
-      // 方式 1: 使用 NextAuth 的 access token
-      if ((session as any).accessToken) {
-        headers['Authorization'] = `Bearer ${(session as any).accessToken}`
-      }
-      // 方式 2: 使用用户 ID 或 email
-      else {
-        headers['X-User-Email'] = session.user.email || ''
-        headers['X-User-ID'] = session.user.id || ''
-      }
+    // 添加认证 token
+    const token = getAuthToken()
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
     }
 
     // 发起请求
@@ -148,15 +141,13 @@ export async function del<T = any>(endpoint: string): Promise<T> {
  * 文件上传
  */
 export async function upload<T = any>(endpoint: string, file: File): Promise<T> {
-  const session = await getSession()
   const formData = new FormData()
   formData.append('file', file)
 
   const headers: HeadersInit = {}
-  if (session?.user) {
-    if ((session as any).accessToken) {
-      headers['Authorization'] = `Bearer ${(session as any).accessToken}`
-    }
+  const token = getAuthToken()
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
   }
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {

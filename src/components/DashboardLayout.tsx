@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { Layout, Menu, Avatar, Dropdown, Space, Button } from 'antd'
+import { useState, useEffect } from 'react'
+import { Layout, Menu, Avatar, Dropdown, Space, Button, Spin } from 'antd'
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -12,7 +12,7 @@ import {
   RocketOutlined,
 } from '@ant-design/icons'
 import { useRouter, usePathname } from 'next/navigation'
-import { signOut, useSession } from 'next-auth/react'
+import { useAuth } from '@/contexts/AuthContext'
 import type { MenuProps } from 'antd'
 
 const { Header, Sider, Content } = Layout
@@ -21,7 +21,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [collapsed, setCollapsed] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
-  const { data: session } = useSession()
+  const { user, logout, loading, isAuthenticated } = useAuth()
+
+  // 未登录时重定向到登录页
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      router.push(`/auth/google-login?callbackUrl=${encodeURIComponent(pathname)}`)
+    }
+  }, [loading, isAuthenticated, router, pathname])
+
+  // 加载中
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Spin size="large" tip="加载中..." />
+      </div>
+    )
+  }
+
+  // 未登录
+  if (!isAuthenticated) {
+    return null
+  }
 
   const menuItems: MenuProps['items'] = [
     {
@@ -41,12 +62,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       icon: <UserOutlined />,
       label: '用户管理',
       onClick: () => router.push('/dashboard/users'),
-    },
-    {
-      key: '/dashboard/settings',
-      icon: <SettingOutlined />,
-      label: '系统设置',
-      onClick: () => router.push('/dashboard/settings'),
     },
   ]
 
@@ -68,7 +83,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       key: 'logout',
       icon: <LogoutOutlined />,
       label: '退出登录',
-      onClick: () => signOut({ callbackUrl: '/' }),
+      onClick: () => logout(),
     },
   ]
 
@@ -129,8 +144,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           />
           <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
             <Space style={{ cursor: 'pointer' }}>
-              <Avatar src={session?.user?.image} icon={<UserOutlined />} />
-              <span>{session?.user?.name || '用户'}</span>
+              <Avatar icon={<UserOutlined />} />
+              <span>{user?.name || '用户'}</span>
             </Space>
           </Dropdown>
         </Header>

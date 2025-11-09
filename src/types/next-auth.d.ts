@@ -8,6 +8,13 @@ declare module 'next-auth' {
       email?: string | null
       image?: string | null
     }
+    backendToken?: string
+    backendUser?: {
+      id: string
+      uuid: string
+      email: string
+      name: string
+    }
   }
 }
 

@@ -1,33 +1,24 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { Card, Table, Button, Space, Tag, Divider } from 'antd'
-import { PlusOutlined, DownloadOutlined, SwapOutlined, UploadOutlined } from '@ant-design/icons'
+import { Card, Table, Button, Space, Tag, Modal, Form, Input, message, Alert, Typography } from 'antd'
+import { PlusOutlined, DownloadOutlined, SwapOutlined, UploadOutlined, KeyOutlined, CopyOutlined } from '@ant-design/icons'
 import DashboardLayout from '@/components/DashboardLayout'
+import { apiClient } from '@/lib/api-client'
+import DepositModal from '@/components/wallet/DepositModal'
 
-// 钱包列表数据
-const walletData = [
-  {
-    key: '1',
-    address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
-    totalAssets: '$125,430.50',
-    unrealizedPnl: '+$2,340.20',
-    margin: '$45,000.00',
-    withdrawable: '$80,430.50',
-    balance: '$125,430.50',
-  },
-  {
-    key: '2',
-    address: '0x8ba1f109551bD432803012645Ac136ddd64DBA72',
-    totalAssets: '$89,250.00',
-    unrealizedPnl: '-$1,120.50',
-    margin: '$30,000.00',
-    withdrawable: '$59,250.00',
-    balance: '$89,250.00',
-  },
-]
+const { Paragraph, Text } = Typography
+
+// 钱包类型定义
+interface Wallet {
+  id: string
+  user_uuid: string
+  name: string
+  address: string
+  status: string
+  created_at: number
+  updated_at: number
+}
 
 // 跟单列表数据
 const copyTradingData = [
@@ -94,25 +85,121 @@ const positionData = [
 ]
 
 export default function DemoPage() {
-  const { data: session, status } = useSession()
-  const router = useRouter()
+  const [form] = Form.useForm()
 
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin')
+  // 钱包相关状态
+  const [wallets, setWallets] = useState<Wallet[]>([])
+  const [walletsLoading, setWalletsLoading] = useState(false)
+  const [createModalVisible, setCreateModalVisible] = useState(false)
+  const [createLoading, setCreateLoading] = useState(false)
+
+  // 导出私钥相关状态
+  const [exportModalVisible, setExportModalVisible] = useState(false)
+  const [exportLoading, setExportLoading] = useState(false)
+  const [currentWallet, setCurrentWallet] = useState<Wallet | null>(null)
+  const [privateKey, setPrivateKey] = useState<string>('')
+
+  // 存款相关状态
+  const [depositModalVisible, setDepositModalVisible] = useState(false)
+  const [depositWallet, setDepositWallet] = useState<Wallet | null>(null)
+
+  // 获取钱包列表
+  const fetchWallets = async () => {
+    setWalletsLoading(true)
+    try {
+      const response = await apiClient<{ wallets: Wallet[] }>('/api/v1/wallet/list')
+      setWallets(response.wallets || [])
+    } catch (error: any) {
+      message.error(`获取钱包列表失败: ${error.message}`)
+    } finally {
+      setWalletsLoading(false)
     }
-  }, [status, router])
-
-  if (status === 'loading') {
-    return <div>Loading...</div>
   }
 
-  if (!session) {
-    return null
+  // 创建钱包
+  const handleCreateWallet = async (values: { name: string }) => {
+    setCreateLoading(true)
+    try {
+      await apiClient('/api/v1/wallet/create', {
+        method: 'POST',
+        body: JSON.stringify({ name: values.name }),
+      })
+      message.success('钱包创建成功！')
+      setCreateModalVisible(false)
+      form.resetFields()
+      // 刷新钱包列表
+      fetchWallets()
+    } catch (error: any) {
+      message.error(`创建钱包失败: ${error.message}`)
+    } finally {
+      setCreateLoading(false)
+    }
   }
+
+  // 导出私钥
+  const handleExportPrivateKey = async (wallet: Wallet) => {
+    setCurrentWallet(wallet)
+    setExportModalVisible(true)
+    setExportLoading(true)
+    setPrivateKey('')
+
+    try {
+      const response = await apiClient<{ private_key: string; warning: string }>(
+        `/api/v1/wallet/${wallet.id}/export-key`
+      )
+      setPrivateKey(response.private_key)
+    } catch (error: any) {
+      message.error(`导出私钥失败: ${error.message}`)
+      setExportModalVisible(false)
+    } finally {
+      setExportLoading(false)
+    }
+  }
+
+  // 复制私钥
+  const handleCopyPrivateKey = () => {
+    navigator.clipboard.writeText(privateKey)
+    message.success('私钥已复制到剪贴板')
+  }
+
+  // 关闭导出私钥模态框
+  const handleCloseExportModal = () => {
+    setExportModalVisible(false)
+    setPrivateKey('')
+    setCurrentWallet(null)
+  }
+
+  // 打开存款模态框
+  const handleOpenDepositModal = (wallet: Wallet) => {
+    setDepositWallet(wallet)
+    setDepositModalVisible(true)
+  }
+
+  // 关闭存款模态框
+  const handleCloseDepositModal = () => {
+    setDepositModalVisible(false)
+    setDepositWallet(null)
+  }
+
+  // 确认已转账
+  const handleConfirmDeposit = () => {
+    // TODO: 这里可以调用后端接口记录存款请求
+    handleCloseDepositModal()
+  }
+
+  // 组件挂载时获取钱包列表
+  useEffect(() => {
+    fetchWallets()
+  }, [])
 
   // 钱包列表列配置
   const walletColumns = [
+    {
+      title: '钱包名称',
+      dataIndex: 'name',
+      key: 'name',
+      width: 150,
+    },
     {
       title: '钱包地址',
       dataIndex: 'address',
@@ -123,55 +210,85 @@ export default function DemoPage() {
       ),
     },
     {
-      title: '总资产',
-      dataIndex: 'totalAssets',
-      key: 'totalAssets',
-      width: 130,
-    },
-    {
-      title: '未实现盈亏',
-      dataIndex: 'unrealizedPnl',
-      key: 'unrealizedPnl',
-      width: 130,
-      render: (text: string) => (
-        <span style={{ color: text.includes('+') ? '#52c41a' : '#f5222d' }}>
-          {text}
-        </span>
+      title: '状态',
+      dataIndex: 'status',
+      key: 'status',
+      width: 80,
+      render: (status: string) => (
+        <Tag color={status === 'active' ? 'green' : 'red'}>
+          {status === 'active' ? '激活' : '禁用'}
+        </Tag>
       ),
     },
     {
+      title: '总资产',
+      key: 'totalAssets',
+      width: 130,
+      render: () => <span style={{ color: '#999' }}>--</span>,
+    },
+    {
+      title: '未实现盈亏',
+      key: 'unrealizedPnl',
+      width: 130,
+      render: () => <span style={{ color: '#999' }}>--</span>,
+    },
+    {
       title: '保证金',
-      dataIndex: 'margin',
       key: 'margin',
       width: 130,
+      render: () => <span style={{ color: '#999' }}>--</span>,
     },
     {
       title: '可提现',
-      dataIndex: 'withdrawable',
       key: 'withdrawable',
       width: 130,
+      render: () => <span style={{ color: '#999' }}>--</span>,
     },
     {
       title: '余额',
-      dataIndex: 'balance',
       key: 'balance',
       width: 130,
+      render: () => <span style={{ color: '#999' }}>--</span>,
     },
     {
       title: '操作',
       key: 'action',
       fixed: 'right' as const,
-      width: 200,
-      render: () => (
-        <Space size="small">
-          <Button type="link" size="small" icon={<DownloadOutlined />}>
+      width: 280,
+      render: (_, record) => (
+        <Space size="small" wrap>
+          <Button 
+            type="link" 
+            size="small" 
+            icon={<DownloadOutlined />}
+            onClick={() => handleOpenDepositModal(record)}
+          >
             存款
           </Button>
-          <Button type="link" size="small" icon={<SwapOutlined />}>
+          <Button 
+            type="link" 
+            size="small" 
+            icon={<SwapOutlined />}
+            onClick={() => message.info(`转账功能开发中 - 钱包: ${record.name}`)}
+          >
             转账
           </Button>
-          <Button type="link" size="small" icon={<UploadOutlined />}>
+          <Button 
+            type="link" 
+            size="small" 
+            icon={<UploadOutlined />}
+            onClick={() => message.info(`提现功能开发中 - 钱包: ${record.name}`)}
+          >
             提现
+          </Button>
+          <Button 
+            type="link" 
+            size="small" 
+            icon={<KeyOutlined />}
+            onClick={() => handleExportPrivateKey(record)}
+            danger
+          >
+            导出私钥
           </Button>
         </Space>
       ),
@@ -385,18 +502,145 @@ export default function DemoPage() {
         <Card
           title="我的钱包"
           extra={
-            <Button type="primary" icon={<PlusOutlined />}>
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />}
+              onClick={() => setCreateModalVisible(true)}
+            >
               创建钱包
             </Button>
           }
         >
           <Table
             columns={walletColumns}
-            dataSource={walletData}
+            dataSource={wallets}
+            rowKey="id"
+            loading={walletsLoading}
             pagination={false}
-            scroll={{ x: 1200 }}
+            scroll={{ x: 1400 }}
+            locale={{
+              emptyText: '暂无钱包，点击右上角按钮创建'
+            }}
           />
         </Card>
+
+        {/* 创建钱包模态框 */}
+        <Modal
+          title="创建钱包"
+          open={createModalVisible}
+          onOk={() => form.submit()}
+          onCancel={() => {
+            setCreateModalVisible(false)
+            form.resetFields()
+          }}
+          confirmLoading={createLoading}
+        >
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleCreateWallet}
+          >
+            <Form.Item
+              label="钱包名称"
+              name="name"
+              rules={[
+                { required: true, message: '请输入钱包名称' },
+                { min: 1, max: 50, message: '钱包名称长度应在1-50个字符之间' }
+              ]}
+            >
+              <Input placeholder="例如：主钱包、交易钱包1" />
+            </Form.Item>
+          </Form>
+        </Modal>
+
+        {/* 导出私钥模态框 */}
+        <Modal
+          title={
+            <span>
+              <KeyOutlined style={{ marginRight: 8, color: '#ff4d4f' }} />
+              导出私钥
+            </span>
+          }
+          open={exportModalVisible}
+          onCancel={handleCloseExportModal}
+          footer={[
+            <Button key="close" onClick={handleCloseExportModal}>
+              关闭
+            </Button>,
+            <Button
+              key="copy"
+              type="primary"
+              icon={<CopyOutlined />}
+              onClick={handleCopyPrivateKey}
+              disabled={!privateKey || exportLoading}
+            >
+              复制私钥
+            </Button>,
+          ]}
+          width={600}
+        >
+          <Space direction="vertical" size="large" style={{ width: '100%' }}>
+            <Alert
+              message="安全警告"
+              description="私钥是您钱包的唯一凭证，请妥善保管！任何人获得您的私钥都可以完全控制您的资产。请勿将私钥分享给任何人，也不要通过网络传输。"
+              type="error"
+              showIcon
+            />
+
+            <div>
+              <Text strong>钱包名称：</Text>
+              <Text>{currentWallet?.name}</Text>
+            </div>
+
+            <div>
+              <Text strong>钱包地址：</Text>
+              <Paragraph copyable style={{ fontFamily: 'monospace', marginBottom: 0 }}>
+                {currentWallet?.address}
+              </Paragraph>
+            </div>
+
+            <div>
+              <Text strong>私钥：</Text>
+              {exportLoading ? (
+                <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                  <Text type="secondary">正在解密私钥...</Text>
+                </div>
+              ) : privateKey ? (
+                <Paragraph
+                  copyable
+                  style={{
+                    fontFamily: 'monospace',
+                    background: '#f5f5f5',
+                    padding: 12,
+                    borderRadius: 4,
+                    wordBreak: 'break-all',
+                    marginBottom: 0,
+                  }}
+                >
+                  {privateKey}
+                </Paragraph>
+              ) : null}
+            </div>
+
+            <Alert
+              message="请务必离线保存"
+              description="建议您将私钥抄写在纸上并妥善保管，或使用专业的硬件钱包存储。切勿截图或保存在联网的设备上。"
+              type="warning"
+              showIcon
+            />
+          </Space>
+        </Modal>
+
+        {/* 存款模态框 */}
+        {depositWallet && (
+          <DepositModal
+            visible={depositModalVisible}
+            walletAddress={depositWallet.address}
+            walletName={depositWallet.name}
+            onClose={handleCloseDepositModal}
+            onConfirm={handleConfirmDeposit}
+          />
+        )}
 
         {/* 第二部分：我的跟单 */}
         <Card
