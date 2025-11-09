@@ -1,7 +1,7 @@
 'use client'
 
 import { signIn } from 'next-auth/react'
-import { Button, Card, Typography, Space, Divider } from 'antd'
+import { Button, Card, Typography, Space, Divider, Alert } from 'antd'
 import { GoogleOutlined, RocketOutlined } from '@ant-design/icons'
 
 const { Title, Paragraph } = Typography
@@ -37,6 +37,14 @@ export default function SignIn() {
               使用您的 Google 账号登录
             </Paragraph>
           </div>
+
+          <Alert
+            message="温馨提示"
+            description="如果在国内访问 Google 登录失败，请确保已配置代理并使用代理启动脚本。"
+            type="info"
+            showIcon
+            style={{ textAlign: 'left' }}
+          />
 
           <Divider />
 
