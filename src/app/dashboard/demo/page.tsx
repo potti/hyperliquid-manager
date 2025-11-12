@@ -6,6 +6,8 @@ import { PlusOutlined, DownloadOutlined, SwapOutlined, UploadOutlined, KeyOutlin
 import DashboardLayout from '@/components/DashboardLayout'
 import { apiClient } from '@/lib/api-client'
 import DepositModal from '@/components/wallet/DepositModal'
+import AddTraderModal from '@/components/copy-trading/AddTraderModal'
+import TraderInfoModal, { TraderInfo } from '@/components/copy-trading/TraderInfoModal'
 
 const { Paragraph, Text } = Typography
 
@@ -110,6 +112,12 @@ export default function DemoPage() {
   const [depositModalVisible, setDepositModalVisible] = useState(false)
   const [depositWallet, setDepositWallet] = useState<Wallet | null>(null)
   const [depositLoading, setDepositLoading] = useState(false)
+
+  // 跟单相关状态
+  const [addTraderModalVisible, setAddTraderModalVisible] = useState(false)
+  const [traderInfoModalVisible, setTraderInfoModalVisible] = useState(false)
+  const [traderLoading, setTraderLoading] = useState(false)
+  const [currentTraderInfo, setCurrentTraderInfo] = useState<TraderInfo | null>(null)
 
   // 获取钱包列表
   const fetchWallets = async () => {
@@ -230,6 +238,31 @@ export default function DemoPage() {
     } finally {
       setDepositLoading(false)
     }
+  }
+
+  // 查询交易员信息
+  const handleQueryTrader = async (address: string) => {
+    setTraderLoading(true)
+    try {
+      const response = await apiClient<TraderInfo>(
+        `/api/v1/copy-trading/traders?address=${encodeURIComponent(address)}`
+      )
+      setCurrentTraderInfo(response)
+      setAddTraderModalVisible(false)
+      setTraderInfoModalVisible(true)
+      message.success('查询成功！')
+    } catch (error: any) {
+      message.error(`查询失败: ${error.message}`)
+    } finally {
+      setTraderLoading(false)
+    }
+  }
+
+  // 创建跟单
+  const handleSubscribeTrader = (traderInfo: TraderInfo) => {
+    // TODO: 实现创建跟单逻辑
+    message.info('创建跟单功能开发中...')
+    console.log('创建跟单:', traderInfo)
   }
 
   // 钱包状态配置
@@ -794,7 +827,11 @@ export default function DemoPage() {
         <Card
           title="我的跟单"
           extra={
-            <Button type="primary" icon={<PlusOutlined />}>
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />}
+              onClick={() => setAddTraderModalVisible(true)}
+            >
               创建跟单
             </Button>
           }
@@ -816,6 +853,22 @@ export default function DemoPage() {
             scroll={{ x: 2000 }}
           />
         </Card>
+
+        {/* 添加交易员模态框 */}
+        <AddTraderModal
+          visible={addTraderModalVisible}
+          loading={traderLoading}
+          onConfirm={handleQueryTrader}
+          onCancel={() => setAddTraderModalVisible(false)}
+        />
+
+        {/* 交易员信息模态框 */}
+        <TraderInfoModal
+          visible={traderInfoModalVisible}
+          traderInfo={currentTraderInfo}
+          onClose={() => setTraderInfoModalVisible(false)}
+          onSubscribe={handleSubscribeTrader}
+        />
       </Space>
     </DashboardLayout>
   )
