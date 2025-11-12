@@ -7,7 +7,7 @@ import DashboardLayout from '@/components/DashboardLayout'
 import { apiClient } from '@/lib/api-client'
 import DepositModal from '@/components/wallet/DepositModal'
 import AddTraderModal from '@/components/copy-trading/AddTraderModal'
-import TraderInfoModal, { TraderInfo } from '@/components/copy-trading/TraderInfoModal'
+import TraderSubscribeModal, { TraderInfo, SubscribeFormValues } from '@/components/copy-trading/TraderSubscribeModal'
 
 const { Paragraph, Text } = Typography
 
@@ -29,69 +29,67 @@ interface Wallet {
   }
 }
 
-// 跟单列表数据
-const copyTradingData = [
-  {
-    key: '1',
-    status: 'active',
-    network: 'Ethereum',
-    taskName: '跟单任务-001',
-    tradingWallet: '0x742d...0bEb',
-    followedWallet: '0x8ba1...DBA72',
-    availableBalance: '$50,000.00',
-    marginUsage: '65%',
-    unrealizedProfit: '+$3,450.00',
-  },
-  {
-    key: '2',
-    status: 'paused',
-    network: 'BSC',
-    taskName: '跟单任务-002',
-    tradingWallet: '0x8ba1...DBA72',
-    followedWallet: '0x9cd2...EF93',
-    availableBalance: '$30,000.00',
-    marginUsage: '42%',
-    unrealizedProfit: '-$850.00',
-  },
-]
+// 跟单订阅类型定义
+interface CopyTradeSubscription {
+  id: string
+  user_uuid: string
+  name: string
+  trader_address: string
+  wallet_address: string
+  amount_type: 'ratio' | 'fixed'
+  follow_coefficient?: number
+  max_leverage?: number
+  max_amount?: number
+  min_amount?: number
+  follow_amount?: number
+  take_profit_pct?: number
+  stop_loss_pct?: number
+  enable_add_position: boolean
+  follow_add_position: boolean
+  follow_reduce_position: boolean
+  copy_position: boolean
+  reverse_follow: boolean
+  margin_mode: 'margin' | 'cross' | 'isolated'
+  token_whitelist?: string[]
+  token_blacklist?: string[]
+  status: 'active' | 'paused' | 'stopped'
+  created_at: number
+  updated_at: number
+  trader_info?: {
+    address: string
+    account_value: string
+    unrealized_pnl: string
+    margin_used: string
+    withdrawable: string
+    is_registered: boolean
+    position_summary: {
+      total_position_value: string
+      position_count: number
+      long_position_count: number
+      short_position_count: number
+      total_unrealized_pnl: string
+    }
+  }
+}
 
-// 仓位列表数据
-const positionData = [
-  {
-    key: '1',
-    wallet: '0x742d...0bEb',
-    symbol: 'BTC/USDT',
-    type: '全仓',
-    leverage: '10x',
-    direction: '多',
-    pnl: '+15.23%',
-    pnlValue: '+$6,850.00',
-    amount: '0.5 BTC',
-    positionValue: '$45,000.00',
-    entryPrice: '$89,500.00',
-    markPrice: '$92,350.00',
-    liquidationPrice: '$82,100.00',
-    margin: '$4,500.00',
-    fundingFee: '-$23.50',
-  },
-  {
-    key: '2',
-    wallet: '0x8ba1...DBA72',
-    symbol: 'ETH/USDT',
-    type: '全仓',
-    leverage: '5x',
-    direction: '空',
-    pnl: '-8.45%',
-    pnlValue: '-$1,690.00',
-    amount: '10 ETH',
-    positionValue: '$20,000.00',
-    entryPrice: '$2,050.00',
-    markPrice: '$2,223.00',
-    liquidationPrice: '$2,400.00',
-    margin: '$4,000.00',
-    fundingFee: '+$12.30',
-  },
-]
+// 仓位类型定义（待后端接口实现）
+interface Position {
+  id: string
+  wallet: string
+  symbol: string
+  type: string
+  leverage: string
+  direction: string
+  pnl: string
+  pnlValue: string
+  amount: string
+  positionValue: string
+  entryPrice: string
+  markPrice: string
+  liquidationPrice: string
+  margin: string
+  fundingFee: string
+}
 
 export default function DemoPage() {
   const [form] = Form.useForm()
@@ -118,6 +116,21 @@ export default function DemoPage() {
   const [traderInfoModalVisible, setTraderInfoModalVisible] = useState(false)
   const [traderLoading, setTraderLoading] = useState(false)
   const [currentTraderInfo, setCurrentTraderInfo] = useState<TraderInfo | null>(null)
+  const [subscribeLoading, setSubscribeLoading] = useState(false)
+  const [copyTradingList, setCopyTradingList] = useState<CopyTradeSubscription[]>([])
+  const [copyTradingLoading, setCopyTradingLoading] = useState(false)
+
+  // 仓位相关状态
+  const [positionList, setPositionList] = useState<Position[]>([])
+  const [positionLoading, setPositionLoading] = useState(false)
+
+  // 编辑跟单相关状态
+  const [editModalVisible, setEditModalVisible] = useState(false)
+  const [currentSubscription, setCurrentSubscription] = useState<CopyTradeSubscription | null>(null)
+  const [editLoading, setEditLoading] = useState(false)
+
+  // 停止/启用跟单相关状态
+  const [stopLoading, setStopLoading] = useState<string | null>(null) // 存储正在操作的订阅ID
 
   // 获取钱包列表
   const fetchWallets = async () => {
@@ -259,10 +272,75 @@ export default function DemoPage() {
   }
 
   // 创建跟单
-  const handleSubscribeTrader = (traderInfo: TraderInfo) => {
-    // TODO: 实现创建跟单逻辑
-    message.info('创建跟单功能开发中...')
-    console.log('创建跟单:', traderInfo)
+  const handleCreateSubscribe = async (values: SubscribeFormValues) => {
+    if (!currentTraderInfo) {
+      message.error('交易员信息不存在')
+      return
+    }
+
+    setSubscribeLoading(true)
+    try {
+      // 构建请求体
+      const requestBody: any = {
+        name: values.name,
+        trader_address: currentTraderInfo.address,
+        wallet_address: values.wallet_address,
+        amount_type: values.amount_type,
+        enable_add_position: values.enable_add_position,
+        follow_add_position: values.follow_add_position,
+        follow_reduce_position: values.follow_reduce_position,
+        copy_position: values.copy_position,
+        reverse_follow: values.reverse_follow,
+        margin_mode: values.margin_mode,
+        token_whitelist: values.token_whitelist || [],
+        token_blacklist: values.token_blacklist || [],
+      }
+
+      // 根据金额类型添加相应参数
+      if (values.amount_type === 'ratio') {
+        if (values.follow_coefficient !== undefined) {
+          requestBody.follow_coefficient = values.follow_coefficient
+        }
+        if (values.max_leverage !== undefined && values.max_leverage > 0) {
+          requestBody.max_leverage = values.max_leverage
+        }
+        if (values.max_amount !== undefined && values.max_amount > 0) {
+          requestBody.max_amount = values.max_amount
+        }
+        if (values.min_amount !== undefined && values.min_amount > 0) {
+          requestBody.min_amount = values.min_amount
+        }
+      } else if (values.amount_type === 'fixed') {
+        if (values.follow_amount !== undefined && values.follow_amount > 0) {
+          requestBody.follow_amount = values.follow_amount
+        }
+      }
+
+      // 添加止盈止损
+      if (values.take_profit_pct !== undefined && values.take_profit_pct > 0) {
+        requestBody.take_profit_pct = values.take_profit_pct
+      }
+      if (values.stop_loss_pct !== undefined && values.stop_loss_pct > 0) {
+        requestBody.stop_loss_pct = values.stop_loss_pct
+      }
+
+      // 调用后端接口
+      const response = await apiClient('/api/v1/copy-trading/subscribe', {
+        method: 'POST',
+        body: JSON.stringify(requestBody),
+      })
+
+      message.success('跟单创建成功！')
+      setTraderInfoModalVisible(false)
+      setCurrentTraderInfo(null)
+      
+      // 刷新跟单列表
+      await fetchCopyTradingList()
+    } catch (error: any) {
+      message.error(`创建跟单失败: ${error.message}`)
+    } finally {
+      setSubscribeLoading(false)
+    }
   }
 
   // 钱包状态配置
@@ -302,9 +380,215 @@ export default function DemoPage() {
     return <span>{formatted}</span>
   }
 
-  // 组件挂载时获取钱包列表
+  // 获取跟单列表
+  const fetchCopyTradingList = async () => {
+    setCopyTradingLoading(true)
+    try {
+      const response = await apiClient<{ subscriptions: CopyTradeSubscription[]; total: number }>(
+        '/api/v1/copy-trading/subscriptions'
+      )
+      setCopyTradingList(response.subscriptions || [])
+    } catch (error: any) {
+      message.error(`获取跟单列表失败: ${error.message}`)
+    } finally {
+      setCopyTradingLoading(false)
+    }
+  }
+
+  // 获取仓位列表（待后端接口实现）
+  const fetchPositions = async () => {
+    setPositionLoading(true)
+    try {
+      // TODO: 待后端实现 /api/v1/trading/positions 接口
+      // const response = await apiClient<{ positions: Position[] }>('/api/v1/trading/positions')
+      // setPositionList(response.positions || [])
+      setPositionList([]) // 暂时为空数组
+    } catch (error: any) {
+      message.error(`获取仓位列表失败: ${error.message}`)
+    } finally {
+      setPositionLoading(false)
+    }
+  }
+
+  // 打开编辑模态框
+  const handleEditSubscription = async (subscription: CopyTradeSubscription) => {
+    setEditLoading(true)
+    try {
+      // 获取跟单详情（包含交易员信息）
+      const response = await apiClient<{ subscription: CopyTradeSubscription; trader_info?: TraderInfo }>(
+        `/api/v1/copy-trading/subscribe/${subscription.id}`
+      )
+      // 将 trader_info 合并到 subscription 中
+      const subscriptionWithTraderInfo: CopyTradeSubscription = {
+        ...response.subscription,
+        trader_info: response.trader_info || response.subscription.trader_info,
+      }
+      setCurrentSubscription(subscriptionWithTraderInfo)
+      setEditModalVisible(true)
+    } catch (error: any) {
+      message.error(`获取跟单详情失败: ${error.message}`)
+    } finally {
+      setEditLoading(false)
+    }
+  }
+
+  // 更新跟单
+  const handleUpdateSubscription = async (values: SubscribeFormValues) => {
+    if (!currentSubscription) return
+
+    setEditLoading(true)
+    try {
+      // 构建请求体（只包含需要更新的字段）
+      const requestBody: any = {}
+
+      // 名称
+      if (values.name !== currentSubscription.name) {
+        requestBody.name = values.name
+      }
+
+      // 金额类型
+      if (values.amount_type !== currentSubscription.amount_type) {
+        requestBody.amount_type = values.amount_type
+      }
+
+      // 根据金额类型添加相应参数
+      if (values.amount_type === 'ratio') {
+        if (values.follow_coefficient !== undefined && values.follow_coefficient !== currentSubscription.follow_coefficient) {
+          requestBody.follow_coefficient = values.follow_coefficient
+        }
+        if (values.max_leverage !== undefined && values.max_leverage !== currentSubscription.max_leverage) {
+          requestBody.max_leverage = values.max_leverage
+        }
+        if (values.max_amount !== undefined && values.max_amount !== currentSubscription.max_amount) {
+          requestBody.max_amount = values.max_amount
+        }
+        if (values.min_amount !== undefined && values.min_amount !== currentSubscription.min_amount) {
+          requestBody.min_amount = values.min_amount
+        }
+      } else if (values.amount_type === 'fixed') {
+        if (values.follow_amount !== undefined && values.follow_amount !== currentSubscription.follow_amount) {
+          requestBody.follow_amount = values.follow_amount
+        }
+      }
+
+      // 止盈止损
+      if (values.take_profit_pct !== undefined && values.take_profit_pct !== currentSubscription.take_profit_pct) {
+        requestBody.take_profit_pct = values.take_profit_pct
+      }
+      if (values.stop_loss_pct !== undefined && values.stop_loss_pct !== currentSubscription.stop_loss_pct) {
+        requestBody.stop_loss_pct = values.stop_loss_pct
+      }
+
+      // 开关选项
+      if (values.enable_add_position !== currentSubscription.enable_add_position) {
+        requestBody.enable_add_position = values.enable_add_position
+      }
+      if (values.follow_add_position !== currentSubscription.follow_add_position) {
+        requestBody.follow_add_position = values.follow_add_position
+      }
+      if (values.follow_reduce_position !== currentSubscription.follow_reduce_position) {
+        requestBody.follow_reduce_position = values.follow_reduce_position
+      }
+      if (values.copy_position !== currentSubscription.copy_position) {
+        requestBody.copy_position = values.copy_position
+      }
+      if (values.reverse_follow !== currentSubscription.reverse_follow) {
+        requestBody.reverse_follow = values.reverse_follow
+      }
+
+      // 跟单模式
+      if (values.margin_mode !== currentSubscription.margin_mode) {
+        requestBody.margin_mode = values.margin_mode
+      }
+
+      // 代币黑白名单
+      const whitelistChanged = JSON.stringify(values.token_whitelist || []) !== JSON.stringify(currentSubscription.token_whitelist || [])
+      const blacklistChanged = JSON.stringify(values.token_blacklist || []) !== JSON.stringify(currentSubscription.token_blacklist || [])
+      if (whitelistChanged) {
+        requestBody.token_whitelist = values.token_whitelist || []
+      }
+      if (blacklistChanged) {
+        requestBody.token_blacklist = values.token_blacklist || []
+      }
+
+      // 调用更新接口
+      await apiClient(`/api/v1/copy-trading/subscribe/${currentSubscription.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(requestBody),
+      })
+
+      message.success('跟单更新成功！')
+      setEditModalVisible(false)
+      setCurrentSubscription(null)
+      
+      // 刷新跟单列表
+      await fetchCopyTradingList()
+    } catch (error: any) {
+      message.error(`更新跟单失败: ${error.message}`)
+    } finally {
+      setEditLoading(false)
+    }
+  }
+
+  // 停止跟单
+  const handleStopSubscription = async (subscription: CopyTradeSubscription) => {
+    Modal.confirm({
+      title: '确认停止跟单',
+      content: `确定要停止跟单"${subscription.name}"吗？停止后将无法继续跟单。`,
+      okText: '确认',
+      cancelText: '取消',
+      okType: 'danger',
+      onOk: async () => {
+        setStopLoading(subscription.id)
+        try {
+          await apiClient(`/api/v1/copy-trading/subscribe/${subscription.id}`, {
+            method: 'DELETE',
+          })
+          message.success('跟单已停止')
+          // 刷新跟单列表
+          await fetchCopyTradingList()
+        } catch (error: any) {
+          message.error(`停止跟单失败: ${error.message}`)
+        } finally {
+          setStopLoading(null)
+        }
+      },
+    })
+  }
+
+  // 启用跟单
+  const handleEnableSubscription = async (subscription: CopyTradeSubscription) => {
+    Modal.confirm({
+      title: '确认启用跟单',
+      content: `确定要启用跟单"${subscription.name}"吗？`,
+      okText: '确认',
+      cancelText: '取消',
+      onOk: async () => {
+        setStopLoading(subscription.id)
+        try {
+          await apiClient(`/api/v1/copy-trading/subscribe/${subscription.id}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+              status: 'active',
+            }),
+          })
+          message.success('跟单已启用')
+          // 刷新跟单列表
+          await fetchCopyTradingList()
+        } catch (error: any) {
+          message.error(`启用跟单失败: ${error.message}`)
+        } finally {
+          setStopLoading(null)
+        }
+      },
+    })
+  }
+
+  // 组件挂载时获取钱包列表和跟单列表
   useEffect(() => {
     fetchWallets()
+    fetchCopyTradingList()
+    // fetchPositions() // 待后端接口实现后启用
   }, [])
 
   // 钱包列表列配置
@@ -422,88 +706,170 @@ export default function DemoPage() {
     },
   ]
 
+  // 格式化地址显示（截取前后部分）
+  const formatAddress = (address: string) => {
+    if (!address || address.length < 10) return address
+    return `${address.slice(0, 6)}...${address.slice(-4)}`
+  }
+
+  // 格式化状态显示
+  const getCopyTradingStatusConfig = (status: string) => {
+    const configs: Record<string, { color: string; text: string }> = {
+      active: { color: 'success', text: '运行中' },
+      paused: { color: 'warning', text: '已暂停' },
+      stopped: { color: 'error', text: '已停止' },
+    }
+    return configs[status] || { color: 'default', text: status }
+  }
+
+  // 计算保证金使用率
+  const calculateMarginUsage = (subscription: CopyTradeSubscription): string => {
+    if (!subscription.trader_info) return '--'
+    const accountValue = parseFloat(subscription.trader_info.account_value || '0')
+    const marginUsed = parseFloat(subscription.trader_info.margin_used || '0')
+    if (accountValue === 0) return '0%'
+    const usage = (marginUsed / accountValue) * 100
+    return `${usage.toFixed(2)}%`
+  }
+
   // 跟单列表列配置
   const copyTradingColumns = [
     {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
-      width: 80,
-      render: (status: string) => (
-        <Tag color={status === 'active' ? 'green' : 'orange'}>
-          {status === 'active' ? '运行中' : '已暂停'}
-        </Tag>
-      ),
+      width: 100,
+      render: (status: string) => {
+        const config = getCopyTradingStatusConfig(status)
+        return <Tag color={config.color}>{config.text}</Tag>
+      },
     },
     {
       title: '网络',
-      dataIndex: 'network',
       key: 'network',
       width: 100,
+      render: () => <span style={{ color: '#999' }}>--</span>, // 暂时留空
     },
     {
       title: '任务名称',
-      dataIndex: 'taskName',
-      key: 'taskName',
+      dataIndex: 'name',
+      key: 'name',
       width: 150,
+      render: (text: string) => <Text strong>{text || '--'}</Text>,
     },
     {
       title: '交易钱包',
-      dataIndex: 'tradingWallet',
-      key: 'tradingWallet',
+      dataIndex: 'wallet_address',
+      key: 'wallet_address',
       width: 150,
       render: (text: string) => (
-        <span style={{ fontFamily: 'monospace' }}>{text}</span>
+        <span style={{ fontFamily: 'monospace' }} title={text}>
+          {formatAddress(text)}
+        </span>
       ),
     },
     {
       title: '被跟单钱包',
-      dataIndex: 'followedWallet',
-      key: 'followedWallet',
+      dataIndex: 'trader_address',
+      key: 'trader_address',
       width: 150,
       render: (text: string) => (
-        <span style={{ fontFamily: 'monospace' }}>{text}</span>
+        <span style={{ fontFamily: 'monospace' }} title={text}>
+          {formatAddress(text)}
+        </span>
       ),
     },
     {
       title: '可用余额',
-      dataIndex: 'availableBalance',
       key: 'availableBalance',
       width: 130,
+      render: (_: any, record: CopyTradeSubscription) => {
+        if (!record.trader_info) {
+          return <span style={{ color: '#999' }}>--</span>
+        }
+        return formatUSD(record.trader_info.withdrawable)
+      },
     },
     {
       title: '保证金使用率',
-      dataIndex: 'marginUsage',
       key: 'marginUsage',
       width: 120,
-      render: (text: string) => {
-        const value = parseInt(text)
-        const color = value > 80 ? 'red' : value > 60 ? 'orange' : 'green'
-        return <span style={{ color }}>{text}</span>
+      render: (_: any, record: CopyTradeSubscription) => {
+        const usage = calculateMarginUsage(record)
+        if (usage === '--') {
+          return <span style={{ color: '#999' }}>--</span>
+        }
+        const value = parseFloat(usage.replace('%', ''))
+        const color = value > 80 ? '#ff4d4f' : value > 60 ? '#faad14' : '#52c41a'
+        return <span style={{ color }}>{usage}</span>
       },
     },
     {
       title: '未实现利润',
-      dataIndex: 'unrealizedProfit',
       key: 'unrealizedProfit',
       width: 130,
-      render: (text: string) => (
-        <span style={{ color: text.includes('+') ? '#52c41a' : '#f5222d' }}>
-          {text}
-        </span>
-      ),
+      render: (_: any, record: CopyTradeSubscription) => {
+        if (!record.trader_info) {
+          return <span style={{ color: '#999' }}>--</span>
+        }
+        const pnl = record.trader_info.unrealized_pnl
+        if (!pnl || pnl === '0' || pnl === '0.00') {
+          return <span style={{ color: '#999' }}>$0.00</span>
+        }
+        const num = parseFloat(pnl)
+        const formatted = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+          signDisplay: 'always',
+        }).format(num)
+        const color = num >= 0 ? '#52c41a' : '#ff4d4f'
+        return <span style={{ color, fontWeight: 500 }}>{formatted}</span>
+      },
     },
     {
       title: '操作',
       key: 'action',
       fixed: 'right' as const,
       width: 150,
-      render: () => (
-        <Space size="small">
-          <Button type="link" size="small">编辑</Button>
-          <Button type="link" size="small" danger>停止</Button>
-        </Space>
-      ),
+      render: (_: any, record: CopyTradeSubscription) => {
+        const isStopped = record.status === 'stopped'
+        return (
+          <Space size="small">
+            <Button 
+              type="link" 
+              size="small" 
+              onClick={() => handleEditSubscription(record)}
+              disabled={stopLoading === record.id}
+            >
+              编辑
+            </Button>
+            {isStopped ? (
+              <Button 
+                type="link" 
+                size="small" 
+                onClick={() => handleEnableSubscription(record)}
+                loading={stopLoading === record.id}
+                disabled={stopLoading !== null}
+              >
+                启用
+              </Button>
+            ) : (
+              <Button 
+                type="link" 
+                size="small" 
+                danger 
+                onClick={() => handleStopSubscription(record)}
+                loading={stopLoading === record.id}
+                disabled={stopLoading !== null}
+              >
+                停止
+              </Button>
+            )}
+          </Space>
+        )
+      },
     },
   ]
 
@@ -838,9 +1204,14 @@ export default function DemoPage() {
         >
           <Table
             columns={copyTradingColumns}
-            dataSource={copyTradingData}
+            dataSource={copyTradingList}
+            rowKey="id"
+            loading={copyTradingLoading}
             pagination={false}
             scroll={{ x: 1500 }}
+            locale={{
+              emptyText: '暂无跟单任务，点击右上角按钮创建'
+            }}
           />
         </Card>
 
@@ -848,9 +1219,14 @@ export default function DemoPage() {
         <Card title="仓位">
           <Table
             columns={positionColumns}
-            dataSource={positionData}
+            dataSource={positionList}
+            rowKey="id"
+            loading={positionLoading}
             pagination={false}
             scroll={{ x: 2000 }}
+            locale={{
+              emptyText: '暂无仓位数据'
+            }}
           />
         </Card>
 
@@ -862,12 +1238,31 @@ export default function DemoPage() {
           onCancel={() => setAddTraderModalVisible(false)}
         />
 
-        {/* 交易员信息模态框 */}
-        <TraderInfoModal
+        {/* 交易员信息与创建跟单模态框（合并） */}
+        <TraderSubscribeModal
           visible={traderInfoModalVisible}
           traderInfo={currentTraderInfo}
-          onClose={() => setTraderInfoModalVisible(false)}
-          onSubscribe={handleSubscribeTrader}
+          loading={subscribeLoading}
+          onConfirm={handleCreateSubscribe}
+          onCancel={() => {
+            setTraderInfoModalVisible(false)
+            setCurrentTraderInfo(null)
+          }}
+          mode="create"
+        />
+
+        {/* 编辑跟单模态框 */}
+        <TraderSubscribeModal
+          visible={editModalVisible}
+          traderInfo={currentSubscription?.trader_info || null}
+          loading={editLoading}
+          onConfirm={handleUpdateSubscription}
+          onCancel={() => {
+            setEditModalVisible(false)
+            setCurrentSubscription(null)
+          }}
+          mode="edit"
+          subscription={currentSubscription}
         />
       </Space>
     </DashboardLayout>
