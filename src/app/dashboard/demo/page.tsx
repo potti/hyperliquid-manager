@@ -8,6 +8,7 @@ import { apiClient } from '@/lib/api-client'
 import DepositModal from '@/components/wallet/DepositModal'
 import AddTraderModal from '@/components/copy-trading/AddTraderModal'
 import TraderSubscribeModal, { TraderInfo, SubscribeFormValues } from '@/components/copy-trading/TraderSubscribeModal'
+import TraderInfoModal from '@/components/copy-trading/TraderInfoModal'
 
 const { Paragraph, Text } = Typography
 
@@ -131,6 +132,11 @@ export default function DemoPage() {
 
   // 停止/启用跟单相关状态
   const [stopLoading, setStopLoading] = useState<string | null>(null) // 存储正在操作的订阅ID
+
+  // 交易员信息查看窗口相关状态（从跟单列表点击）
+  const [viewTraderInfoModalVisible, setViewTraderInfoModalVisible] = useState(false)
+  const [viewingTraderInfo, setViewingTraderInfo] = useState<TraderInfo | null>(null)
+  const [viewingTraderLoading, setViewingTraderLoading] = useState(false)
 
   // 获取钱包列表
   const fetchWallets = async () => {
@@ -268,6 +274,23 @@ export default function DemoPage() {
       message.error(`查询失败: ${error.message}`)
     } finally {
       setTraderLoading(false)
+    }
+  }
+
+  // 查看交易员信息（从跟单列表中点击）
+  const handleViewTraderInfo = async (address: string) => {
+    setViewingTraderLoading(true)
+    setViewTraderInfoModalVisible(true)
+    try {
+      const response = await apiClient<TraderInfo>(
+        `/api/v1/copy-trading/traders?address=${encodeURIComponent(address)}`
+      )
+      setViewingTraderInfo(response)
+    } catch (error: any) {
+      message.error(`获取交易员信息失败: ${error.message}`)
+      setViewTraderInfoModalVisible(false)
+    } finally {
+      setViewingTraderLoading(false)
     }
   }
 
@@ -774,9 +797,17 @@ export default function DemoPage() {
       key: 'trader_address',
       width: 150,
       render: (text: string) => (
-        <span style={{ fontFamily: 'monospace' }} title={text}>
+        <a
+          href="#"
+          onClick={(e) => {
+            e.preventDefault()
+            handleViewTraderInfo(text)
+          }}
+          style={{ fontFamily: 'monospace', color: '#1890ff' }}
+          title={text}
+        >
           {formatAddress(text)}
-        </span>
+        </a>
       ),
     },
     {
@@ -1264,6 +1295,37 @@ export default function DemoPage() {
           mode="edit"
           subscription={currentSubscription}
         />
+
+        {/* 交易员信息查看窗口（从跟单列表点击） */}
+        {viewTraderInfoModalVisible && (
+          <>
+            {viewingTraderLoading ? (
+              <Modal
+                title="交易员信息"
+                open={viewTraderInfoModalVisible}
+                onCancel={() => {
+                  setViewTraderInfoModalVisible(false)
+                  setViewingTraderInfo(null)
+                }}
+                footer={null}
+                width={1400}
+              >
+                <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                  <Text type="secondary">正在加载交易员信息...</Text>
+                </div>
+              </Modal>
+            ) : viewingTraderInfo ? (
+              <TraderInfoModal
+                visible={viewTraderInfoModalVisible}
+                traderInfo={viewingTraderInfo}
+                onClose={() => {
+                  setViewTraderInfoModalVisible(false)
+                  setViewingTraderInfo(null)
+                }}
+              />
+            ) : null}
+          </>
+        )}
       </Space>
     </DashboardLayout>
   )
