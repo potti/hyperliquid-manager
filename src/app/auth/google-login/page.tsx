@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, Typography, Alert, Spin } from 'antd'
 import { RocketOutlined } from '@ant-design/icons'
@@ -16,26 +16,7 @@ export default function GoogleLoginPage() {
   const [loading, setLoading] = useState(false)
   const scriptLoaded = useRef(false)
 
-  useEffect(() => {
-    // 加载 Google Identity Services
-    if (scriptLoaded.current) return
-    scriptLoaded.current = true
-
-    const script = document.createElement('script')
-    script.src = 'https://accounts.google.com/gsi/client'
-    script.async = true
-    script.defer = true
-    script.onload = initializeGoogleSignIn
-    document.body.appendChild(script)
-
-    return () => {
-      // 清理
-      const btn = document.getElementById('google-signin-button')
-      if (btn) btn.innerHTML = ''
-    }
-  }, [])
-
-  const initializeGoogleSignIn = () => {
+  const initializeGoogleSignIn = useCallback(() => {
     if (typeof window === 'undefined' || !(window as any).google) return
 
     const google = (window as any).google
@@ -61,7 +42,27 @@ export default function GoogleLoginPage() {
 
     // 也可以显示 One Tap prompt（可选）
     // google.accounts.id.prompt()
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    // 加载 Google Identity Services
+    if (scriptLoaded.current) return
+    scriptLoaded.current = true
+
+    const script = document.createElement('script')
+    script.src = 'https://accounts.google.com/gsi/client'
+    script.async = true
+    script.defer = true
+    script.onload = initializeGoogleSignIn
+    document.body.appendChild(script)
+
+    return () => {
+      // 清理
+      const btn = document.getElementById('google-signin-button')
+      if (btn) btn.innerHTML = ''
+    }
+  }, [initializeGoogleSignIn])
 
   const handleCredentialResponse = async (response: any) => {
     setLoading(true)

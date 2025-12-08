@@ -175,7 +175,7 @@ export default function DepositModal({
             4、点击按钮触发转账
           </Text>
           <Paragraph type="secondary" style={{ marginTop: 8, marginBottom: 0 }}>
-            在您的钱包应用（如 MetaMask）中完成转账操作后，请点击下方"确认已转"按钮。
+            在您的钱包应用（如 MetaMask）中完成转账操作后，请点击下方「确认已转」按钮。
           </Paragraph>
         </div>
 
