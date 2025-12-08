@@ -60,7 +60,7 @@ export interface TraderInfo {
   withdrawable: string
   is_registered: boolean
   position_summary: PositionSummary
-  positions: TraderPosition[]
+  positions?: TraderPosition[]
 }
 
 // 钱包类型
@@ -520,7 +520,7 @@ export default function TraderSubscribeModal({
           )}
 
           {/* 当前仓位 */}
-          {displayTraderInfo && displayTraderInfo.is_registered && displayTraderInfo.positions.length > 0 && (
+          {displayTraderInfo && displayTraderInfo.is_registered && displayTraderInfo.positions && displayTraderInfo.positions.length > 0 && (
             <Card title={`当前仓位 (${displayTraderInfo.positions.length})`} size="small" style={{ marginBottom: 12 }}>
               <Table
                 columns={positionColumns}
@@ -533,7 +533,7 @@ export default function TraderSubscribeModal({
             </Card>
           )}
 
-          {displayTraderInfo && displayTraderInfo.is_registered && displayTraderInfo.positions.length === 0 && (
+          {displayTraderInfo && displayTraderInfo.is_registered && (!displayTraderInfo.positions || displayTraderInfo.positions.length === 0) && (
             <Alert
               message="当前无持仓"
               description="该交易员目前没有任何持仓。"
