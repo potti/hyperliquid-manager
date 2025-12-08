@@ -48,9 +48,14 @@ export async function apiClient<T = any>(
 ): Promise<T> {
   try {
     // 构建请求头
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers,
+    }
+
+    // 合并传入的 headers
+    if (options.headers) {
+      const incomingHeaders = options.headers as Record<string, string>
+      Object.assign(headers, incomingHeaders)
     }
 
     // 添加认证 token
@@ -144,7 +149,7 @@ export async function upload<T = any>(endpoint: string, file: File): Promise<T> 
   const formData = new FormData()
   formData.append('file', file)
 
-  const headers: HeadersInit = {}
+  const headers: Record<string, string> = {}
   const token = getAuthToken()
   if (token) {
     headers['Authorization'] = `Bearer ${token}`

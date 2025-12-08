@@ -1,14 +1,13 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, Typography, Alert, Spin } from 'antd'
 import { RocketOutlined } from '@ant-design/icons'
 
 const { Title, Paragraph } = Typography
 
-// Google One Tap 登录（不需要代理）
-export default function GoogleLoginPage() {
+function GoogleLoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
@@ -16,55 +15,7 @@ export default function GoogleLoginPage() {
   const [loading, setLoading] = useState(false)
   const scriptLoaded = useRef(false)
 
-  const initializeGoogleSignIn = useCallback(() => {
-    if (typeof window === 'undefined' || !(window as any).google) return
-
-    const google = (window as any).google
-
-    // 初始化 Google Sign-In
-    google.accounts.id.initialize({
-      client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
-      callback: handleCredentialResponse,
-      auto_select: false,
-    })
-
-    // 渲染登录按钮
-    google.accounts.id.renderButton(
-      document.getElementById('google-signin-button'),
-      {
-        theme: 'filled_blue',
-        size: 'large',
-        text: 'signin_with',
-        shape: 'rectangular',
-        width: 350,
-      }
-    )
-
-    // 也可以显示 One Tap prompt（可选）
-    // google.accounts.id.prompt()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  useEffect(() => {
-    // 加载 Google Identity Services
-    if (scriptLoaded.current) return
-    scriptLoaded.current = true
-
-    const script = document.createElement('script')
-    script.src = 'https://accounts.google.com/gsi/client'
-    script.async = true
-    script.defer = true
-    script.onload = initializeGoogleSignIn
-    document.body.appendChild(script)
-
-    return () => {
-      // 清理
-      const btn = document.getElementById('google-signin-button')
-      if (btn) btn.innerHTML = ''
-    }
-  }, [initializeGoogleSignIn])
-
-  const handleCredentialResponse = async (response: any) => {
+  const handleCredentialResponse = useCallback(async (response: any) => {
     setLoading(true)
     setError(null)
 
@@ -108,7 +59,54 @@ export default function GoogleLoginPage() {
       setError(err.message || '登录失败，请重试')
       setLoading(false)
     }
-  }
+  }, [callbackUrl, router])
+
+  const initializeGoogleSignIn = useCallback(() => {
+    if (typeof window === 'undefined' || !(window as any).google) return
+
+    const google = (window as any).google
+
+    // 初始化 Google Sign-In
+    google.accounts.id.initialize({
+      client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+      callback: handleCredentialResponse,
+      auto_select: false,
+    })
+
+    // 渲染登录按钮
+    google.accounts.id.renderButton(
+      document.getElementById('google-signin-button'),
+      {
+        theme: 'filled_blue',
+        size: 'large',
+        text: 'signin_with',
+        shape: 'rectangular',
+        width: 350,
+      }
+    )
+
+    // 也可以显示 One Tap prompt（可选）
+    // google.accounts.id.prompt()
+  }, [handleCredentialResponse])
+
+  useEffect(() => {
+    // 加载 Google Identity Services
+    if (scriptLoaded.current) return
+    scriptLoaded.current = true
+
+    const script = document.createElement('script')
+    script.src = 'https://accounts.google.com/gsi/client'
+    script.async = true
+    script.defer = true
+    script.onload = initializeGoogleSignIn
+    document.body.appendChild(script)
+
+    return () => {
+      // 清理
+      const btn = document.getElementById('google-signin-button')
+      if (btn) btn.innerHTML = ''
+    }
+  }, [initializeGoogleSignIn])
 
   return (
     <div
@@ -171,3 +169,41 @@ export default function GoogleLoginPage() {
   )
 }
 
+// Loading fallback component
+function LoadingFallback() {
+  return (
+    <div
+      style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px',
+      }}
+    >
+      <Card
+        style={{
+          maxWidth: 450,
+          width: '100%',
+          borderRadius: 16,
+          boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+          padding: '20px',
+        }}
+      >
+        <div style={{ textAlign: 'center' }}>
+          <Spin size="large" tip="加载中..." />
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// Google One Tap 登录（不需要代理）
+export default function GoogleLoginPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <GoogleLoginContent />
+    </Suspense>
+  )
+}
