@@ -585,11 +585,11 @@ export default function TraderSubscribeModal({
                   loading={walletsLoading}
                   showSearch
                   filterOption={(input, option) =>
-                    (option?.children as string)?.toLowerCase().includes(input.toLowerCase())
+                    String(option?.label || '').toLowerCase().includes(input.toLowerCase())
                   }
                 >
                   {activeWallets.map((wallet) => (
-                    <Option key={wallet.id} value={wallet.address}>
+                    <Option key={wallet.id} value={wallet.address} label={`${wallet.name} (${wallet.address})`}>
                       {wallet.name} ({wallet.address})
                     </Option>
                   ))}
