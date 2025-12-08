@@ -38,7 +38,7 @@ export interface TraderInfo {
   withdrawable: string
   is_registered: boolean
   position_summary: PositionSummary
-  positions: TraderPosition[]
+  positions?: TraderPosition[]
 }
 
 interface TraderInfoModalProps {
@@ -284,7 +284,7 @@ export default function TraderInfoModal({
         )}
 
         {/* 当前仓位 */}
-        {traderInfo.is_registered && traderInfo.positions.length > 0 && (
+        {traderInfo.is_registered && traderInfo.positions && traderInfo.positions.length > 0 && (
           <Card title={`当前仓位 (${traderInfo.positions.length})`} size="small">
             <Table
               columns={positionColumns}
@@ -297,7 +297,7 @@ export default function TraderInfoModal({
           </Card>
         )}
 
-        {traderInfo.is_registered && traderInfo.positions.length === 0 && (
+        {traderInfo.is_registered && (!traderInfo.positions || traderInfo.positions.length === 0) && (
           <Alert
             message="当前无持仓"
             description="该交易员目前没有任何持仓。"
