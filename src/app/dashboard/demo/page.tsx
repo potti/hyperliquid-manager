@@ -73,23 +73,29 @@ interface CopyTradeSubscription {
   }
 }
 
-// 仓位类型定义（待后端接口实现）
+// 仓位类型定义（匹配后端接口返回的数据）
 interface Position {
   id: string
-  wallet: string
+  account_id: string
   symbol: string
-  type: string
-  leverage: string
-  direction: string
-  pnl: string
-  pnlValue: string
-  amount: string
-  positionValue: string
-  entryPrice: string
-  markPrice: string
-  liquidationPrice: string
-  margin: string
-  fundingFee: string
+  side: string
+  size: number
+  position_value: number
+  entry_price: number
+  mark_price: number
+  liquidation_px: number
+  unrealized_pnl: number
+  margin_used: number
+  return_on_equity: number
+  leverage: number
+  status: string
+  created_at: number
+  updated_at: number
+}
+
+// 仓位列表响应类型
+interface PositionsResponse {
+  trader_positions: Position[]
 }
 
 export default function DemoPage() {
@@ -418,16 +424,15 @@ export default function DemoPage() {
     }
   }
 
-  // 获取仓位列表（待后端接口实现）
+  // 获取仓位列表
   const fetchPositions = async () => {
     setPositionLoading(true)
     try {
-      // TODO: 待后端实现 /api/v1/trading/positions 接口
-      // const response = await apiClient<{ positions: Position[] }>('/api/v1/trading/positions')
-      // setPositionList(response.positions || [])
-      setPositionList([]) // 暂时为空数组
+      const response = await apiClient<PositionsResponse>('/api/v1/trading/positions')
+      setPositionList(response.trader_positions || [])
     } catch (error: any) {
       message.error(`获取仓位列表失败: ${error.message}`)
+      setPositionList([])
     } finally {
       setPositionLoading(false)
     }
@@ -607,11 +612,11 @@ export default function DemoPage() {
     })
   }
 
-  // 组件挂载时获取钱包列表和跟单列表
+  // 组件挂载时获取钱包列表、跟单列表和仓位列表
   useEffect(() => {
     fetchWallets()
     fetchCopyTradingList()
-    // fetchPositions() // 待后端接口实现后启用
+    fetchPositions()
   }, [])
 
   // 钱包列表列配置
@@ -904,118 +909,153 @@ export default function DemoPage() {
     },
   ]
 
+  // 格式化数字
+  const formatNumber = (value: number | undefined, decimals: number = 2): string => {
+    if (value === undefined || value === null || isNaN(value)) {
+      return '--'
+    }
+    return new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    }).format(value)
+  }
+
+  // 格式化货币
+  const formatCurrency = (value: number | undefined): string => {
+    if (value === undefined || value === null || isNaN(value)) {
+      return '$--'
+    }
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value)
+  }
+
+  // 格式化百分比
+  const formatPercent = (value: number | undefined): string => {
+    if (value === undefined || value === null || isNaN(value)) {
+      return '--%'
+    }
+    const sign = value >= 0 ? '+' : ''
+    return `${sign}${value.toFixed(2)}%`
+  }
+
   // 仓位列表列配置
   const positionColumns = [
-    {
-      title: '钱包',
-      dataIndex: 'wallet',
-      key: 'wallet',
-      width: 140,
-      render: (text: string) => (
-        <span style={{ fontFamily: 'monospace' }}>{text}</span>
-      ),
-    },
     {
       title: '币种',
       dataIndex: 'symbol',
       key: 'symbol',
       width: 120,
+      fixed: 'left' as const,
     },
     {
-      title: '全仓',
-      dataIndex: 'type',
-      key: 'type',
+      title: '方向',
+      dataIndex: 'side',
+      key: 'side',
       width: 80,
+      render: (side: string) => {
+        const isLong = side === 'Long'
+        return (
+          <Tag color={isLong ? 'green' : 'red'}>
+            {isLong ? '多' : '空'}
+          </Tag>
+        )
+      },
     },
     {
       title: '杠杆',
       dataIndex: 'leverage',
       key: 'leverage',
       width: 80,
-    },
-    {
-      title: '方向',
-      dataIndex: 'direction',
-      key: 'direction',
-      width: 80,
-      render: (text: string) => (
-        <Tag color={text === '多' ? 'green' : 'red'}>{text}</Tag>
-      ),
-    },
-    {
-      title: '盈亏（ROE %）',
-      dataIndex: 'pnl',
-      key: 'pnl',
-      width: 150,
-      render: (text: string, record: any) => (
-        <div>
-          <div style={{ color: text.includes('+') ? '#52c41a' : '#f5222d', fontWeight: 'bold' }}>
-            {text}
-          </div>
-          <div style={{ fontSize: '12px', color: text.includes('+') ? '#52c41a' : '#f5222d' }}>
-            {record.pnlValue}
-          </div>
-        </div>
-      ),
+      render: (leverage: number) => `${leverage}x`,
     },
     {
       title: '数量',
-      dataIndex: 'amount',
-      key: 'amount',
-      width: 100,
+      dataIndex: 'size',
+      key: 'size',
+      width: 120,
+      render: (size: number) => formatNumber(size, 4),
     },
     {
       title: '仓位价值',
-      dataIndex: 'positionValue',
-      key: 'positionValue',
+      dataIndex: 'position_value',
+      key: 'position_value',
       width: 130,
+      render: (value: number) => formatCurrency(value),
     },
     {
       title: '开仓价格',
-      dataIndex: 'entryPrice',
-      key: 'entryPrice',
+      dataIndex: 'entry_price',
+      key: 'entry_price',
       width: 120,
+      render: (price: number) => formatNumber(price, 4),
     },
     {
       title: '标记价格',
-      dataIndex: 'markPrice',
-      key: 'markPrice',
+      dataIndex: 'mark_price',
+      key: 'mark_price',
       width: 120,
+      render: (price: number) => formatNumber(price, 4),
     },
     {
       title: '强平价格',
-      dataIndex: 'liquidationPrice',
-      key: 'liquidationPrice',
+      dataIndex: 'liquidation_px',
+      key: 'liquidation_px',
       width: 120,
+      render: (price: number) => {
+        if (!price || price === 0) return '--'
+        return formatNumber(price, 4)
+      },
+    },
+    {
+      title: '未实现盈亏',
+      dataIndex: 'unrealized_pnl',
+      key: 'unrealized_pnl',
+      width: 150,
+      render: (pnl: number) => {
+        const color = pnl >= 0 ? '#52c41a' : '#ff4d4f'
+        return <span style={{ color, fontWeight: 500 }}>{formatCurrency(pnl)}</span>
+      },
+    },
+    {
+      title: 'ROE %',
+      dataIndex: 'return_on_equity',
+      key: 'return_on_equity',
+      width: 120,
+      render: (roe: number) => {
+        const color = roe >= 0 ? '#52c41a' : '#ff4d4f'
+        return <span style={{ color, fontWeight: 500 }}>{formatPercent(roe)}</span>
+      },
     },
     {
       title: '保证金',
-      dataIndex: 'margin',
-      key: 'margin',
+      dataIndex: 'margin_used',
+      key: 'margin_used',
       width: 120,
+      render: (margin: number) => formatCurrency(margin),
     },
     {
-      title: '资金费',
-      dataIndex: 'fundingFee',
-      key: 'fundingFee',
+      title: '状态',
+      dataIndex: 'status',
+      key: 'status',
       width: 100,
-      render: (text: string) => (
-        <span style={{ color: text.includes('+') ? '#52c41a' : '#f5222d' }}>
-          {text}
-        </span>
-      ),
+      render: (status: string) => {
+        const color = status === 'OPEN' ? 'green' : 'default'
+        return <Tag color={color}>{status === 'OPEN' ? '持仓中' : '已平仓'}</Tag>
+      },
     },
     {
-      title: '操作',
-      key: 'action',
-      fixed: 'right' as const,
-      width: 150,
-      render: () => (
-        <Space size="small">
-          <Button type="link" size="small">平仓</Button>
-          <Button type="link" size="small">调整</Button>
-        </Space>
-      ),
+      title: '更新时间',
+      dataIndex: 'updated_at',
+      key: 'updated_at',
+      width: 180,
+      render: (timestamp: number) => {
+        if (!timestamp) return '--'
+        return new Date(timestamp * 1000).toLocaleString('zh-CN')
+      },
     },
   ]
 
