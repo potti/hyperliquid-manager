@@ -650,13 +650,13 @@ export default function DemoPage() {
       title: '总资产',
       key: 'totalAssets',
       width: 130,
-      render: (_, record: Wallet) => formatUSD(record.hyperliquid?.account_value),
+      render: (_: unknown, record: Wallet) => formatUSD(record.hyperliquid?.account_value),
     },
     {
       title: '未实现盈亏',
       key: 'unrealizedPnl',
       width: 140,
-      render: (_, record: Wallet) => {
+      render: (_: unknown, record: Wallet) => {
         const value = record.hyperliquid?.unrealized_pnl
         if (!value || value === '0' || value === '0.00') {
           return <span style={{ color: '#999' }}>$0.00</span>
@@ -681,20 +681,20 @@ export default function DemoPage() {
       title: '保证金',
       key: 'margin',
       width: 130,
-      render: (_, record: Wallet) => formatUSD(record.hyperliquid?.margin_used),
+      render: (_: unknown, record: Wallet) => formatUSD(record.hyperliquid?.margin_used),
     },
     {
       title: '可提现',
       key: 'withdrawable',
       width: 130,
-      render: (_, record: Wallet) => formatUSD(record.hyperliquid?.withdrawable),
+      render: (_: unknown, record: Wallet) => formatUSD(record.hyperliquid?.withdrawable),
     },
     {
       title: '操作',
       key: 'action',
       fixed: 'right' as const,
       width: 280,
-      render: (_, record) => (
+      render: (_: unknown, record: Wallet) => (
         <Space size="small" wrap>
           <Button 
             type="link" 
