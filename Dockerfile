@@ -21,6 +21,12 @@ ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=$NEXT_PUBLIC_GOOGLE_CLIENT_ID
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
+# Print build-time environment variables
+RUN echo "=== Build-time Environment Variables ===" && \
+    echo "NEXT_PUBLIC_GOOGLE_CLIENT_ID: $NEXT_PUBLIC_GOOGLE_CLIENT_ID" && \
+    echo "NEXT_PUBLIC_API_URL: $NEXT_PUBLIC_API_URL" && \
+    echo "========================================"
+
 # Build the application
 RUN npm run build
 
@@ -29,6 +35,12 @@ FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV production
+
+# Pass build args to runtime for display (Note: NEXT_PUBLIC_* are baked into JS at build time)
+ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=$NEXT_PUBLIC_GOOGLE_CLIENT_ID
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
@@ -43,11 +55,28 @@ RUN chown nextjs:nodejs .next
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Create startup script that prints env vars and starts server
+RUN printf '%s\n' \
+    '#!/bin/sh' \
+    'echo "=========================================="' \
+    'echo "  Hyperliquid Manager Starting..."' \
+    'echo "=========================================="' \
+    'echo "Environment Variables:"' \
+    'echo "  NODE_ENV: ${NODE_ENV}"' \
+    'echo "  PORT: ${PORT}"' \
+    'echo "  NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}"' \
+    'echo "  NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}"' \
+    'echo "=========================================="' \
+    'exec node server.js' \
+    > /app/start.sh && \
+    chmod +x /app/start.sh && \
+    chown nextjs:nodejs /app/start.sh
+
 USER nextjs
 
 EXPOSE 3000
 
 ENV PORT 3000
 
-CMD ["node", "server.js"]
+CMD ["/app/start.sh"]
 
