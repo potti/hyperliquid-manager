@@ -6,8 +6,9 @@ import { useRouter } from 'next/navigation'
 interface User {
   id: string
   uuid: string
-  email: string
-  name: string
+  email?: string
+  name?: string
+  evm_address?: string
 }
 
 interface AuthContextType {
@@ -58,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('user')
     setToken(null)
     setUser(null)
-    router.push('/auth/google-login')
+    router.push('/auth/signin')
   }
 
   const value = {
