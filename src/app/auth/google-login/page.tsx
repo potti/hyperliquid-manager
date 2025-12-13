@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { Card, Typography, Alert, Spin, Button, Divider } from 'antd'
 import { RocketOutlined, WalletOutlined } from '@ant-design/icons'
 import { BrowserProvider } from 'ethers'
@@ -9,7 +9,6 @@ import { BrowserProvider } from 'ethers'
 const { Title, Paragraph } = Typography
 
 function GoogleLoginContent() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
   const [error, setError] = useState<string | null>(null)
@@ -54,14 +53,14 @@ function GoogleLoginContent() {
       console.log('登录成功，用户:', data.data.user.email)
       console.log('跳转到:', callbackUrl)
 
-      // 跳转到目标页面
-      router.push(callbackUrl)
+      // 跳转到目标页面 - 使用 window.location 确保可靠跳转
+      window.location.href = callbackUrl
     } catch (err: any) {
       console.error('登录失败:', err)
       setError(err.message || '登录失败，请重试')
       setLoading(false)
     }
-  }, [callbackUrl, router])
+  }, [callbackUrl])
 
   // 钱包登录处理
   const handleWalletLogin = useCallback(async () => {
