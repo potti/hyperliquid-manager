@@ -426,14 +426,16 @@ export default function DemoPage() {
   }
 
   // 获取仓位列表
-  const fetchPositions = async () => {
+  const fetchPositions = async (showError: boolean = true) => {
     setPositionLoading(true)
     try {
       const response = await apiClient<PositionsResponse>('/api/v1/trading/positions')
       setPositionList(response.trader_positions || [])
       setLastPositionRefreshTime(new Date())
     } catch (error: any) {
-      message.error(`获取仓位列表失败: ${error.message}`)
+      if (showError) {
+        message.error(`获取仓位列表失败: ${error.message}`)
+      }
       setPositionList([])
     } finally {
       setPositionLoading(false)
@@ -625,7 +627,7 @@ export default function DemoPage() {
   useEffect(() => {
     // 设置定时器，每 10 秒刷新仓位
     const positionRefreshInterval = setInterval(() => {
-      fetchPositions()
+      fetchPositions(false) // 自动刷新时不显示错误信息
     }, 10000) // 10 秒
 
     // 组件卸载时清理定时器
