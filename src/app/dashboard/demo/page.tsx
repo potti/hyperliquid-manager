@@ -1319,7 +1319,7 @@ export default function DemoPage() {
             <Button 
               size="small" 
               loading={positionLoading}
-              onClick={fetchPositions}
+              onClick={() => fetchPositions()}
             >
               手动刷新
             </Button>
