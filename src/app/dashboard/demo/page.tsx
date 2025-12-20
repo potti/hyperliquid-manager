@@ -130,7 +130,6 @@ export default function DemoPage() {
   // 仓位相关状态
   const [positionList, setPositionList] = useState<Position[]>([])
   const [positionLoading, setPositionLoading] = useState(false)
-  const [lastPositionRefreshTime, setLastPositionRefreshTime] = useState<Date | null>(null)
 
   // 编辑跟单相关状态
   const [editModalVisible, setEditModalVisible] = useState(false)
@@ -426,16 +425,13 @@ export default function DemoPage() {
   }
 
   // 获取仓位列表
-  const fetchPositions = async (showError: boolean = true) => {
+  const fetchPositions = async () => {
     setPositionLoading(true)
     try {
       const response = await apiClient<PositionsResponse>('/api/v1/trading/positions')
       setPositionList(response.trader_positions || [])
-      setLastPositionRefreshTime(new Date())
     } catch (error: any) {
-      if (showError) {
-        message.error(`获取仓位列表失败: ${error.message}`)
-      }
+      message.error(`获取仓位列表失败: ${error.message}`)
       setPositionList([])
     } finally {
       setPositionLoading(false)
@@ -621,19 +617,6 @@ export default function DemoPage() {
     fetchWallets()
     fetchCopyTradingList()
     fetchPositions()
-  }, [])
-
-  // 仓位列表自动刷新 - 每 10 秒刷新一次
-  useEffect(() => {
-    // 设置定时器，每 10 秒刷新仓位
-    const positionRefreshInterval = setInterval(() => {
-      fetchPositions(false) // 自动刷新时不显示错误信息
-    }, 10000) // 10 秒
-
-    // 组件卸载时清理定时器
-    return () => {
-      clearInterval(positionRefreshInterval)
-    }
   }, [])
 
   // 钱包列表列配置
@@ -1304,27 +1287,7 @@ export default function DemoPage() {
         </Card>
 
         {/* 第三部分：仓位 */}
-        <Card 
-          title={
-            <Space>
-              <span>仓位</span>
-              {lastPositionRefreshTime && (
-                <Tag color="blue" style={{ fontSize: 12 }}>
-                  自动刷新 · 最后更新: {lastPositionRefreshTime.toLocaleTimeString('zh-CN')}
-                </Tag>
-              )}
-            </Space>
-          }
-          extra={
-            <Button 
-              size="small" 
-              loading={positionLoading}
-              onClick={() => fetchPositions()}
-            >
-              手动刷新
-            </Button>
-          }
-        >
+        <Card title="仓位">
           <Table
             columns={positionColumns}
             dataSource={positionList}

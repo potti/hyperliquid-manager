@@ -52,16 +52,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       onClick: () => router.push('/dashboard'),
     },
     {
-      key: '/dashboard/futures',
+      key: '/dashboard/demo',
       icon: <RocketOutlined />,
-      label: '永续合约',
-      children: [
-        {
-          key: '/dashboard/demo',
-          label: '跟单交易',
-          onClick: () => router.push('/dashboard/demo'),
-        },
-      ],
+      label: 'Demo',
+      onClick: () => router.push('/dashboard/demo'),
     },
     {
       key: '/dashboard/users',
@@ -123,7 +117,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           theme="dark"
           mode="inline"
           selectedKeys={[pathname]}
-          defaultOpenKeys={['/dashboard/futures']}
           items={menuItems}
         />
       </Sider>
