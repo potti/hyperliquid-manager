@@ -52,10 +52,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       onClick: () => router.push('/dashboard'),
     },
     {
-      key: '/dashboard/demo',
+      key: '/dashboard/futures',
       icon: <RocketOutlined />,
-      label: 'Demo',
-      onClick: () => router.push('/dashboard/demo'),
+      label: '永续合约',
+      children: [
+        {
+          key: '/dashboard/demo',
+          label: '跟单交易',
+          onClick: () => router.push('/dashboard/demo'),
+        },
+        {
+          key: '/dashboard/discover',
+          label: '发现',
+          onClick: () => router.push('/dashboard/discover'),
+        },
+      ],
     },
     {
       key: '/dashboard/users',
@@ -117,6 +128,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           theme="dark"
           mode="inline"
           selectedKeys={[pathname]}
+          defaultOpenKeys={['/dashboard/futures']}
           items={menuItems}
         />
       </Sider>

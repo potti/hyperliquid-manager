@@ -286,15 +286,14 @@ export default function DemoPage() {
   // 查看交易员信息（从跟单列表中点击）
   const handleViewTraderInfo = async (address: string) => {
     setViewingTraderLoading(true)
-    setViewTraderInfoModalVisible(true)
     try {
       const response = await apiClient<TraderInfo>(
         `/api/v1/copy-trading/traders?address=${encodeURIComponent(address)}`
       )
       setViewingTraderInfo(response)
+      setViewTraderInfoModalVisible(true)
     } catch (error: any) {
       message.error(`获取交易员信息失败: ${error.message}`)
-      setViewTraderInfoModalVisible(false)
     } finally {
       setViewingTraderLoading(false)
     }
