@@ -26,6 +26,8 @@ interface TraderData {
   short_win_count: number         // 做空盈利次数
   last_trade_time: number         // 最后交易时间（时间戳）
   trade_interval: number          // 平均交易间隔（秒）
+  // 盈亏指标
+  profit_loss_ratio?: number      // 盈亏比
   // 风险指标
   max_drawdown?: number           // 最大回撤（百分比）
   max_drawdown_value?: number     // 最大回撤金额
