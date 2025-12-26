@@ -26,6 +26,16 @@ interface TraderData {
   short_win_count: number         // 做空盈利次数
   last_trade_time: number         // 最后交易时间（时间戳）
   trade_interval: number          // 平均交易间隔（秒）
+  // 风险指标
+  max_drawdown?: number           // 最大回撤（百分比）
+  max_drawdown_value?: number     // 最大回撤金额
+  sharpe_ratio?: number            // 夏普比率
+  total_return?: number            // 总回报（百分比）
+  equity_curve?: Array<{          // 净值曲线（可选）
+    timestamp: number
+    equity: number
+    pnl: number
+  }>
 }
 
 export default function DiscoverPage() {
@@ -284,6 +294,63 @@ export default function DiscoverPage() {
       sorter: (a, b) => a.trade_interval - b.trade_interval,
       render: (value: number) => formatInterval(value),
     },
+    {
+      title: '最大回撤',
+      dataIndex: 'max_drawdown',
+      key: 'max_drawdown',
+      width: 120,
+      sorter: (a, b) => (a.max_drawdown || 0) - (b.max_drawdown || 0),
+      render: (value: number | undefined) => {
+        if (value === undefined || value === null || isNaN(value)) {
+          return <span style={{ color: '#999' }}>--</span>
+        }
+        // 回撤是负数，显示为绝对值，颜色根据回撤大小判断
+        const absValue = Math.abs(value)
+        const color = absValue <= 15 ? '#52c41a' : absValue <= 30 ? '#faad14' : '#ff4d4f'
+        return <span style={{ color, fontWeight: 500 }}>-{absValue.toFixed(2)}%</span>
+      },
+    },
+    {
+      title: '盈亏比',
+      dataIndex: 'profit_loss_ratio',
+      key: 'profit_loss_ratio',
+      width: 100,
+      sorter: (a, b) => (a.profit_loss_ratio || 0) - (b.profit_loss_ratio || 0),
+      render: (value: number | undefined) => {
+        if (value === undefined || value === null || isNaN(value)) {
+          return <span style={{ color: '#999' }}>--</span>
+        }
+        const color = value >= 1.5 ? '#52c41a' : value >= 1.0 ? '#faad14' : '#ff4d4f'
+        return <span style={{ color, fontWeight: 500 }}>{value.toFixed(2)}</span>
+      },
+    },
+    {
+      title: '夏普比率',
+      dataIndex: 'sharpe_ratio',
+      key: 'sharpe_ratio',
+      width: 120,
+      sorter: (a, b) => (a.sharpe_ratio || 0) - (b.sharpe_ratio || 0),
+      render: (value: number | undefined) => {
+        if (value === undefined || value === null || isNaN(value)) {
+          return <span style={{ color: '#999' }}>--</span>
+        }
+        const color = value >= 2.0 ? '#52c41a' : value >= 1.0 ? '#faad14' : '#ff4d4f'
+        return <span style={{ color, fontWeight: 500 }}>{value.toFixed(2)}</span>
+      },
+    },
+    {
+      title: '总回报',
+      dataIndex: 'total_return',
+      key: 'total_return',
+      width: 120,
+      sorter: (a, b) => (a.total_return || 0) - (b.total_return || 0),
+      render: (value: number | undefined) => {
+        if (value === undefined || value === null || isNaN(value)) {
+          return <span style={{ color: '#999' }}>--</span>
+        }
+        return formatPercent(value)
+      },
+    },
   ]
 
   return (
@@ -313,7 +380,7 @@ export default function DiscoverPage() {
               showTotal: (total) => `共 ${total} 个交易员`,
             }}
             onChange={handleTableChange}
-            scroll={{ x: 1700 }}
+            scroll={{ x: 2100 }}
             locale={{
               emptyText: '暂无数据'
             }}
