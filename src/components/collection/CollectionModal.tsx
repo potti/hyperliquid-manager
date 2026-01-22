@@ -72,18 +72,13 @@ export default function CollectionModal({ visible, address, onClose, onSuccess }
 
   // 处理保存
   const handleSave = async () => {
-    if (selectedTags.length === 0) {
-      message.warning('请至少选择一个标签')
-      return
-    }
-
     setLoading(true)
     try {
       await collectionApi.createOrUpdate({
         address,
         tags: selectedTags,
       })
-      message.success('收藏成功')
+      message.success(selectedTags.length > 0 ? '收藏成功' : '地址已收藏（未添加标签）')
       onSuccess?.()
       onClose()
     } catch (error: any) {
@@ -110,7 +105,16 @@ export default function CollectionModal({ visible, address, onClose, onSuccess }
 
   return (
     <Modal
-      title={`收藏地址: ${address.slice(0, 6)}...${address.slice(-4)}`}
+      title={
+        <div>
+          <div style={{ fontSize: '16px', fontWeight: 500, marginBottom: 4 }}>
+            收藏地址
+          </div>
+          <div style={{ fontSize: '12px', color: '#999', fontFamily: 'monospace' }}>
+            {address}
+          </div>
+        </div>
+      }
       open={visible}
       onCancel={onClose}
       onOk={handleSave}
@@ -124,7 +128,7 @@ export default function CollectionModal({ visible, address, onClose, onSuccess }
             key="delete"
             danger
             onClick={handleDelete}
-            disabled={loading || selectedTags.length === 0}
+            disabled={loading}
           >
             取消收藏
           </Button>
@@ -137,7 +141,6 @@ export default function CollectionModal({ visible, address, onClose, onSuccess }
               type="primary"
               onClick={handleSave}
               loading={loading}
-              disabled={selectedTags.length === 0}
             >
               保存
             </Button>
@@ -147,7 +150,12 @@ export default function CollectionModal({ visible, address, onClose, onSuccess }
     >
       <Spin spinning={fetchingTags || fetchingCollection}>
         <div style={{ marginBottom: 16 }}>
-          <div style={{ marginBottom: 8, fontWeight: 500 }}>选择标签（可多选）:</div>
+          <div style={{ marginBottom: 8, fontWeight: 500 }}>
+            选择标签（可多选，可选）:
+            <span style={{ color: '#999', fontSize: '12px', fontWeight: 'normal', marginLeft: 8 }}>
+              不选择标签也可以保存
+            </span>
+          </div>
           <Checkbox.Group
             value={selectedTags}
             onChange={(checkedValues) => setSelectedTags(checkedValues as string[])}
