@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Card, Table, Button, Space, message, Tooltip } from 'antd'
-import { ReloadOutlined, StarOutlined, StarFilled } from '@ant-design/icons'
+import { Card, Table, Button, Space, message, Tooltip, Popover, Typography } from 'antd'
+import { ReloadOutlined, StarOutlined, StarFilled, InfoCircleOutlined } from '@ant-design/icons'
+
+const { Text, Title } = Typography
 import DashboardLayout from '@/components/DashboardLayout'
 import TraderInfoModal, { TraderInfo } from '@/components/copy-trading/TraderInfoModal'
 import CollectionModal from '@/components/collection/CollectionModal'
@@ -402,19 +404,106 @@ export default function DiscoverPage() {
     },
   ]
 
+  // 指标说明内容
+  const indicatorGuideContent = (
+    <div style={{ maxWidth: 500 }}>
+      <Title level={5} style={{ marginBottom: 16 }}>交易员筛选指标说明</Title>
+      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+        <div>
+          <Text strong>盈亏比</Text>
+          <div style={{ marginTop: 4, marginLeft: 16 }}>
+            <Text type="secondary">1.5 : 1 ~ 3 : 1</Text>
+            <div style={{ marginTop: 4, fontSize: '12px', color: '#666' }}>
+              即使胜率 40% 也能赚钱，容错率高。
+            </div>
+          </div>
+        </div>
+        <div>
+          <Text strong>夏普比率</Text>
+          <div style={{ marginTop: 4, marginLeft: 16 }}>
+            <Text type="secondary">1.5 ~ 3.0</Text>
+            <div style={{ marginTop: 4, fontSize: '12px', color: '#666' }}>
+              收益与风险平衡，排除马丁策略和纯运气。
+            </div>
+          </div>
+        </div>
+        <div>
+          <Text strong>最大回撤</Text>
+          <div style={{ marginTop: 4, marginLeft: 16 }}>
+            <Text type="secondary">&lt; 25%</Text>
+            <div style={{ marginTop: 4, fontSize: '12px', color: '#666' }}>
+              活着最重要，回撤太深会击穿跟单者的心理防线。
+            </div>
+          </div>
+        </div>
+        <div>
+          <Text strong>Calmar比率</Text>
+          <div style={{ marginTop: 4, marginLeft: 16 }}>
+            <Text type="secondary">&gt; 3.0</Text>
+            <div style={{ marginTop: 4, fontSize: '12px', color: '#666' }}>
+              掉坑里能迅速爬出来，修复能力强。
+            </div>
+          </div>
+        </div>
+        <div>
+          <Text strong>交易频率</Text>
+          <div style={{ marginTop: 4, marginLeft: 16 }}>
+            <Text type="secondary">每周 3~15 单</Text>
+            <div style={{ marginTop: 4, fontSize: '12px', color: '#666' }}>
+              排除高频机器，适合人类逻辑理解。
+            </div>
+          </div>
+        </div>
+        <div>
+          <Text strong>K线相关性</Text>
+          <div style={{ marginTop: 4, marginLeft: 16 }}>
+            <Text type="secondary">熊市不跌 / 震荡微涨</Text>
+            <div style={{ marginTop: 4, fontSize: '12px', color: '#666' }}>
+              证明有 Alpha 能力，而非单纯吃牛市 Beta。
+            </div>
+          </div>
+        </div>
+        <div>
+          <Text strong>资金费表现</Text>
+          <div style={{ marginTop: 4, marginLeft: 16 }}>
+            <Text type="secondary">支付与收取平衡</Text>
+            <div style={{ marginTop: 4, fontSize: '12px', color: '#666' }}>
+              排除专门撸费率的套利党。
+            </div>
+          </div>
+        </div>
+      </Space>
+    </div>
+  )
+
   return (
     <DashboardLayout>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         <Card
           title="发现交易员"
           extra={
-            <Button 
-              icon={<ReloadOutlined />}
-              onClick={fetchTraders}
-              loading={loading}
-            >
-              刷新
-            </Button>
+            <Space>
+              <Popover
+                content={indicatorGuideContent}
+                title={null}
+                trigger={['hover', 'click']}
+                placement="bottomRight"
+                overlayStyle={{ maxWidth: 600 }}
+              >
+                <Button
+                  type="text"
+                  icon={<InfoCircleOutlined />}
+                  style={{ color: '#1890ff' }}
+                />
+              </Popover>
+              <Button 
+                icon={<ReloadOutlined />}
+                onClick={fetchTraders}
+                loading={loading}
+              >
+                刷新
+              </Button>
+            </Space>
           }
         >
           <Table
