@@ -245,7 +245,7 @@ export const collectionApi = {
  */
 export const tagEnumApi = {
   // 获取所有标注枚举
-  getList: () => get<{ tags: Array<{ id: string; name: string; description?: string; color?: string; is_system: boolean; is_active: boolean }>; total: number }>('/api/v1/tag-enum'),
+  getList: () => get<{ tags: Array<{ id: string; name: string; description?: string; color?: string; is_system: boolean; is_active: boolean; created_at: number; updated_at: number }>; total: number }>('/api/v1/tag-enum'),
   
   // 获取单个标注枚举
   getById: (id: string) => get<{ tag: any }>(`/api/v1/tag-enum/${id}`),

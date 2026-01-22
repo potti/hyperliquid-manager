@@ -15,8 +15,8 @@ interface TagEnum {
   color?: string
   is_system: boolean
   is_active: boolean
-  created_at: number
-  updated_at: number
+  created_at?: number
+  updated_at?: number
 }
 
 // 标签表单数据类型
