@@ -10,6 +10,7 @@ import {
   SettingOutlined,
   LogoutOutlined,
   RocketOutlined,
+  StarOutlined,
 } from '@ant-design/icons'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
@@ -65,6 +66,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           key: '/dashboard/discover',
           label: '发现',
           onClick: () => router.push('/dashboard/discover'),
+        },
+        {
+          key: '/dashboard/collections',
+          icon: <StarOutlined />,
+          label: '收藏地址',
+          onClick: () => router.push('/dashboard/collections'),
         },
       ],
     },

@@ -216,3 +216,46 @@ export const statsApi = {
   getDashboard: () => get('/api/stats/dashboard'),
 }
 
+/**
+ * 收藏相关 API
+ */
+export const collectionApi = {
+  // 获取用户的所有收藏
+  getList: () => get<{ collections: any[]; total: number }>('/api/v1/collection'),
+  
+  // 获取特定地址的收藏信息
+  getByAddress: (address: string) => get(`/api/v1/collection/${encodeURIComponent(address)}`),
+  
+  // 收藏并标注某个地址
+  createOrUpdate: (data: { address: string; tags: string[] }) => 
+    post('/api/v1/collection', data),
+  
+  // 删除收藏
+  delete: (address: string) => del(`/api/v1/collection/${encodeURIComponent(address)}`),
+  
+  // 获取所有标签的地址统计
+  getStatsByTag: () => get<{ stats: Array<{ tag_id: string; tag_name: string; count: number }>; total: number }>('/api/v1/collection/stats/by-tag'),
+  
+  // 获取用户标签的地址统计
+  getStatsByTagForUser: () => get<{ stats: Array<{ tag_id: string; tag_name: string; count: number }>; total: number }>('/api/v1/collection/stats/by-tag/user'),
+}
+
+/**
+ * 标签枚举相关 API
+ */
+export const tagEnumApi = {
+  // 获取所有标注枚举
+  getList: () => get<{ tags: Array<{ id: string; name: string; description?: string; color?: string; is_system: boolean; is_active: boolean }>; total: number }>('/api/v1/tag-enum'),
+  
+  // 获取单个标注枚举
+  getById: (id: string) => get<{ tag: any }>(`/api/v1/tag-enum/${id}`),
+  
+  // 新增标注枚举
+  create: (data: { name: string; description?: string; color?: string }) => 
+    post('/api/v1/tag-enum', data),
+  
+  // 修改标注枚举
+  update: (id: string, data: { name?: string; description?: string; color?: string; is_active?: boolean }) => 
+    put(`/api/v1/tag-enum/${id}`, data),
+}
+

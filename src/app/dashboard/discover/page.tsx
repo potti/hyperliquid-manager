@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import { Card, Table, Button, Space, message, Tooltip } from 'antd'
-import { ReloadOutlined } from '@ant-design/icons'
+import { ReloadOutlined, StarOutlined, StarFilled } from '@ant-design/icons'
 import DashboardLayout from '@/components/DashboardLayout'
 import TraderInfoModal, { TraderInfo } from '@/components/copy-trading/TraderInfoModal'
+import CollectionModal from '@/components/collection/CollectionModal'
 import { apiClient } from '@/lib/api-client'
+import { collectionApi } from '@/lib/api-client'
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table'
 import type { SorterResult, FilterValue } from 'antd/es/table/interface'
 
@@ -54,6 +56,11 @@ export default function DiscoverPage() {
   const [currentTraderInfo, setCurrentTraderInfo] = useState<TraderInfo | null>(null)
   const [traderInfoLoading, setTraderInfoLoading] = useState(false)
 
+  // 收藏相关状态
+  const [collectionModalVisible, setCollectionModalVisible] = useState(false)
+  const [currentCollectionAddress, setCurrentCollectionAddress] = useState<string>('')
+  const [collectedAddresses, setCollectedAddresses] = useState<Set<string>>(new Set())
+
   // 获取交易员列表
   const fetchTraders = async () => {
     setLoading(true)
@@ -71,10 +78,31 @@ export default function DiscoverPage() {
     }
   }
 
+  // 获取已收藏的地址列表
+  const fetchCollectedAddresses = async () => {
+    try {
+      const response = await collectionApi.getList()
+      const addresses = new Set<string>()
+      response.collections.forEach((collection: any) => {
+        addresses.add(collection.address)
+      })
+      setCollectedAddresses(addresses)
+    } catch (error: any) {
+      console.error('获取收藏列表失败:', error)
+    }
+  }
+
   // 组件挂载时获取数据
   useEffect(() => {
     fetchTraders()
+    fetchCollectedAddresses()
   }, [])
+
+  // 处理收藏按钮点击
+  const handleCollect = (address: string) => {
+    setCurrentCollectionAddress(address)
+    setCollectionModalVisible(true)
+  }
 
   // 处理表格变化（分页、排序）- 前端排序，不需要重新请求数据
   const handleTableChange = (
@@ -353,6 +381,25 @@ export default function DiscoverPage() {
         return formatPercent(value)
       },
     },
+    {
+      title: '操作',
+      key: 'action',
+      width: 100,
+      fixed: 'right',
+      render: (_: any, record: TraderData) => {
+        const isCollected = collectedAddresses.has(record.address)
+        return (
+          <Button
+            type={isCollected ? 'primary' : 'default'}
+            icon={isCollected ? <StarFilled /> : <StarOutlined />}
+            onClick={() => handleCollect(record.address)}
+            size="small"
+          >
+            {isCollected ? '已收藏' : '收藏'}
+          </Button>
+        )
+      },
+    },
   ]
 
   return (
@@ -382,7 +429,7 @@ export default function DiscoverPage() {
               showTotal: (total) => `共 ${total} 个交易员`,
             }}
             onChange={handleTableChange}
-            scroll={{ x: 2100 }}
+            scroll={{ x: 2200 }}
             locale={{
               emptyText: '暂无数据'
             }}
@@ -396,6 +443,19 @@ export default function DiscoverPage() {
           onClose={() => {
             setTraderInfoModalVisible(false)
             setCurrentTraderInfo(null)
+          }}
+        />
+
+        {/* 收藏弹窗 */}
+        <CollectionModal
+          visible={collectionModalVisible}
+          address={currentCollectionAddress}
+          onClose={() => {
+            setCollectionModalVisible(false)
+            setCurrentCollectionAddress('')
+          }}
+          onSuccess={() => {
+            fetchCollectedAddresses()
           }}
         />
       </Space>
