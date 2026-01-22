@@ -10,7 +10,8 @@ import {
   SettingOutlined,
   LogoutOutlined,
   RocketOutlined,
-  StarOutlined,
+  AppstoreOutlined,
+  TagsOutlined,
 } from '@ant-design/icons'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
@@ -69,17 +70,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         },
         {
           key: '/dashboard/collections',
-          icon: <StarOutlined />,
           label: '收藏地址',
           onClick: () => router.push('/dashboard/collections'),
         },
       ],
     },
     {
-      key: '/dashboard/users',
-      icon: <UserOutlined />,
-      label: '用户管理',
-      onClick: () => router.push('/dashboard/users'),
+      key: '/dashboard/management',
+      icon: <AppstoreOutlined />,
+      label: '管理',
+      children: [
+        {
+          key: '/dashboard/management/tags',
+          icon: <TagsOutlined />,
+          label: '标签管理',
+          onClick: () => router.push('/dashboard/management/tags'),
+        },
+      ],
     },
   ]
 
@@ -135,7 +142,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           theme="dark"
           mode="inline"
           selectedKeys={[pathname]}
-          defaultOpenKeys={['/dashboard/futures']}
+          defaultOpenKeys={['/dashboard/futures', '/dashboard/management']}
           items={menuItems}
         />
       </Sider>
