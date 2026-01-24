@@ -49,7 +49,7 @@ export default function DiscoverPage() {
   const [traderList, setTraderList] = useState<TraderData[]>([])
   const [pagination, setPagination] = useState({
     current: 1,
-    pageSize: 20,
+    pageSize: 100,
     total: 0,
   })
 
@@ -115,7 +115,7 @@ export default function DiscoverPage() {
     // 前端分页，只更新状态
     setPagination({
       current: newPagination.current || 1,
-      pageSize: newPagination.pageSize || 20,
+      pageSize: newPagination.pageSize || 100,
       total: pagination.total,
     })
   }

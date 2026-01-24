@@ -259,3 +259,12 @@ export const tagEnumApi = {
     put(`/api/v1/tag-enum/${id}`, data),
 }
 
+/**
+ * 跟单交易相关 API
+ */
+export const copyTradingApi = {
+  // 获取历史已成交交易记录
+  getHistoricalFills: (params: { address: string; page?: number; pageSize?: number; startTime?: number; endTime?: number }) =>
+    get<{ positions: any[]; pagination: { page: number; pageSize: number; total: number } }>('/api/v1/copy-trading/historical-fills', params),
+}
+

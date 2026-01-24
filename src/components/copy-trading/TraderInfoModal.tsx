@@ -1,7 +1,9 @@
 'use client'
 
-import { Modal, Descriptions, Table, Tag, Space, Alert, Typography, Card } from 'antd'
+import { useState, useEffect } from 'react'
+import { Modal, Descriptions, Table, Tag, Space, Alert, Typography, Card, Tabs, message } from 'antd'
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
+import { copyTradingApi } from '@/lib/api-client'
 
 const { Title, Text } = Typography
 
@@ -48,13 +50,90 @@ interface TraderInfoModalProps {
   onSubscribe?: (traderInfo: TraderInfo) => void
 }
 
+// 历史仓位类型
+interface HistoricalPosition {
+  id: string
+  account_id: string
+  address: string
+  symbol: string
+  side: string
+  size: number
+  position_value: number
+  entry_price: number
+  last_entry_price: number
+  mark_price: number
+  liquidation_px: number
+  unrealized_pnl: number
+  margin_used: number
+  return_on_equity: number
+  leverage: number
+  status: string
+  close_price?: number
+  realized_pnl?: number
+  realized_pnl_pct?: number
+  created_at: number
+  updated_at: number
+}
+
 export default function TraderInfoModal({
   visible,
   traderInfo,
   onClose,
   onSubscribe,
 }: TraderInfoModalProps) {
+  const [activeTab, setActiveTab] = useState('current')
+  const [historicalPositions, setHistoricalPositions] = useState<HistoricalPosition[]>([])
+  const [historicalLoading, setHistoricalLoading] = useState(false)
+  const [historicalPagination, setHistoricalPagination] = useState({
+    page: 1,
+    pageSize: 20,
+    total: 0,
+  })
+
   if (!traderInfo) return null
+
+  // 当 modal 关闭时重置状态
+  useEffect(() => {
+    if (!visible) {
+      setActiveTab('current')
+      setHistoricalPositions([])
+      setHistoricalPagination({ page: 1, pageSize: 20, total: 0 })
+    }
+  }, [visible])
+
+  // 当切换到历史仓位 tab 时，加载数据
+  useEffect(() => {
+    if (visible && activeTab === 'historical' && traderInfo.address) {
+      fetchHistoricalPositions()
+    }
+  }, [visible, activeTab, traderInfo.address])
+
+  // 获取历史仓位数据
+  const fetchHistoricalPositions = async (page = 1, pageSize = 20) => {
+    if (!traderInfo.address) return
+
+    setHistoricalLoading(true)
+    try {
+      const response = await copyTradingApi.getHistoricalFills({
+        address: traderInfo.address,
+        page,
+        pageSize,
+      })
+      setHistoricalPositions(response.positions || [])
+      setHistoricalPagination(response.pagination || { page, pageSize, total: 0 })
+    } catch (error: any) {
+      message.error(`获取历史仓位失败: ${error.message}`)
+      setHistoricalPositions([])
+    } finally {
+      setHistoricalLoading(false)
+    }
+  }
+
+  // 处理历史仓位表格分页变化
+  const handleHistoricalTableChange = (page: number, pageSize: number) => {
+    setHistoricalPagination(prev => ({ ...prev, page, pageSize }))
+    fetchHistoricalPositions(page, pageSize)
+  }
 
   // 格式化美元金额
   const formatUSD = (value: string | undefined) => {
@@ -88,7 +167,97 @@ export default function TraderInfoModal({
     return <span style={{ color, fontWeight: 500 }}>{num >= 0 ? '+' : ''}{num.toFixed(2)}%</span>
   }
 
-  // 仓位列表列配置
+  // 历史仓位列表列配置
+  const historicalPositionColumns = [
+    {
+      title: '币种',
+      dataIndex: 'symbol',
+      key: 'symbol',
+      width: 100,
+      render: (text: string) => <Text strong>{text}</Text>,
+    },
+    {
+      title: '方向',
+      dataIndex: 'side',
+      key: 'side',
+      width: 80,
+      render: (side: string) => (
+        <Tag color={side === 'Long' ? 'green' : 'red'}>
+          {side === 'Long' ? '做多' : '做空'}
+        </Tag>
+      ),
+    },
+    {
+      title: '杠杆',
+      dataIndex: 'leverage',
+      key: 'leverage',
+      width: 80,
+      render: (leverage: number) => `${leverage}x`,
+    },
+    {
+      title: '数量',
+      dataIndex: 'size',
+      key: 'size',
+      width: 120,
+      render: (size: number) => Math.abs(size).toFixed(4),
+    },
+    {
+      title: '开仓价格',
+      dataIndex: 'entry_price',
+      key: 'entry_price',
+      width: 120,
+      render: (price: number) => price ? `$${price.toFixed(2)}` : '--',
+    },
+    {
+      title: '平仓价格',
+      dataIndex: 'close_price',
+      key: 'close_price',
+      width: 120,
+      render: (price: number | undefined) => price ? `$${price.toFixed(2)}` : '--',
+    },
+    {
+      title: '已实现盈亏',
+      dataIndex: 'realized_pnl',
+      key: 'realized_pnl',
+      width: 130,
+      render: (pnl: number | undefined) => {
+        if (pnl === undefined || pnl === null) return '--'
+        return formatUSD(pnl.toString())
+      },
+    },
+    {
+      title: '已实现盈亏%',
+      dataIndex: 'realized_pnl_pct',
+      key: 'realized_pnl_pct',
+      width: 120,
+      render: (pct: number | undefined) => {
+        if (pct === undefined || pct === null) return '--'
+        return formatPercent(pct.toString())
+      },
+    },
+    {
+      title: '开仓时间',
+      dataIndex: 'created_at',
+      key: 'created_at',
+      width: 180,
+      render: (timestamp: number) => {
+        if (!timestamp) return '--'
+        return new Date(timestamp * 1000).toLocaleString('zh-CN')
+      },
+    },
+    {
+      title: '平仓时间',
+      dataIndex: 'updated_at',
+      key: 'updated_at',
+      width: 180,
+      render: (timestamp: number) => {
+        if (!timestamp) return '--'
+        return new Date(timestamp * 1000).toLocaleString('zh-CN')
+      },
+    },
+  ]
+
+  // 当前仓位列表列配置
   const positionColumns = [
     {
       title: '币种',
@@ -283,27 +452,68 @@ export default function TraderInfoModal({
           </Card>
         )}
 
-        {/* 当前仓位 */}
-        {traderInfo.is_registered && traderInfo.positions && traderInfo.positions.length > 0 && (
-          <Card title={`当前仓位 (${traderInfo.positions.length})`} size="small">
-            <Table
-              columns={positionColumns}
-              dataSource={traderInfo.positions}
-              rowKey="coin"
-              pagination={false}
-              scroll={{ x: 1200 }}
-              size="small"
+        {/* 仓位信息 - 使用 Tab */}
+        {traderInfo.is_registered && (
+          <Card size="small">
+            <Tabs
+              activeKey={activeTab}
+              onChange={setActiveTab}
+              items={[
+                {
+                  key: 'current',
+                  label: `当前仓位${traderInfo.positions && traderInfo.positions.length > 0 ? ` (${traderInfo.positions.length})` : ''}`,
+                  children: (
+                    <>
+                      {traderInfo.positions && traderInfo.positions.length > 0 ? (
+                        <Table
+                          columns={positionColumns}
+                          dataSource={traderInfo.positions}
+                          rowKey="coin"
+                          pagination={false}
+                          scroll={{ x: 1200 }}
+                          size="small"
+                        />
+                      ) : (
+                        <Alert
+                          message="当前无持仓"
+                          description="该交易员目前没有任何持仓。"
+                          type="info"
+                          showIcon
+                        />
+                      )}
+                    </>
+                  ),
+                },
+                {
+                  key: 'historical',
+                  label: `历史仓位${historicalPagination.total > 0 ? ` (${historicalPagination.total})` : ''}`,
+                  children: (
+                    <Table
+                      columns={historicalPositionColumns}
+                      dataSource={historicalPositions}
+                      rowKey="id"
+                      loading={historicalLoading}
+                      pagination={{
+                        current: historicalPagination.page,
+                        pageSize: historicalPagination.pageSize,
+                        total: historicalPagination.total,
+                        showSizeChanger: true,
+                        showQuickJumper: true,
+                        showTotal: (total) => `共 ${total} 条记录`,
+                        onChange: (page, pageSize) => handleHistoricalTableChange(page, pageSize),
+                        onShowSizeChange: (current, size) => handleHistoricalTableChange(1, size),
+                      }}
+                      scroll={{ x: 1200 }}
+                      size="small"
+                      locale={{
+                        emptyText: historicalLoading ? '加载中...' : '暂无历史仓位记录',
+                      }}
+                    />
+                  ),
+                },
+              ]}
             />
           </Card>
-        )}
-
-        {traderInfo.is_registered && (!traderInfo.positions || traderInfo.positions.length === 0) && (
-          <Alert
-            message="当前无持仓"
-            description="该交易员目前没有任何持仓。"
-            type="info"
-            showIcon
-          />
         )}
       </Space>
     </Modal>
