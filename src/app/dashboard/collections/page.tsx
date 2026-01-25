@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { Card, Table, Button, Space, message, Tag, Popconfirm, Tooltip } from 'antd'
 import { ReloadOutlined, StarOutlined, StarFilled, DeleteOutlined } from '@ant-design/icons'
-import DashboardLayout from '@/components/DashboardLayout'
 import CollectionModal from '@/components/collection/CollectionModal'
 import { collectionApi, tagEnumApi } from '@/lib/api-client'
 import type { ColumnsType } from 'antd/es/table'
@@ -193,8 +192,7 @@ export default function CollectionsPage() {
   ]
 
   return (
-    <DashboardLayout>
-      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+    <Space direction="vertical" size="large" style={{ width: '100%' }}>
         <Card
           title="收藏地址"
           extra={
@@ -240,7 +238,6 @@ export default function CollectionsPage() {
           }}
         />
       </Space>
-    </DashboardLayout>
   )
 }
 

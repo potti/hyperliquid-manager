@@ -3,12 +3,11 @@
 import { useEffect, useState } from 'react'
 import { Card, Table, Button, Space, Tag, Modal, Form, Input, message, Alert, Typography } from 'antd'
 import { PlusOutlined, DownloadOutlined, SwapOutlined, UploadOutlined, KeyOutlined, CopyOutlined } from '@ant-design/icons'
-import DashboardLayout from '@/components/DashboardLayout'
 import { apiClient } from '@/lib/api-client'
 import DepositModal from '@/components/wallet/DepositModal'
 import AddTraderModal from '@/components/copy-trading/AddTraderModal'
 import TraderSubscribeModal, { TraderInfo, SubscribeFormValues } from '@/components/copy-trading/TraderSubscribeModal'
-import TraderInfoModal from '@/components/copy-trading/TraderInfoModal'
+import { useOpenTraderTab } from '@/utils/tab-utils'
 
 const { Paragraph, Text } = Typography
 
@@ -139,10 +138,8 @@ export default function DemoPage() {
   // 停止/启用跟单相关状态
   const [stopLoading, setStopLoading] = useState<string | null>(null) // 存储正在操作的订阅ID
 
-  // 交易员信息查看窗口相关状态（从跟单列表点击）
-  const [viewTraderInfoModalVisible, setViewTraderInfoModalVisible] = useState(false)
-  const [viewingTraderInfo, setViewingTraderInfo] = useState<TraderInfo | null>(null)
-  const [viewingTraderLoading, setViewingTraderLoading] = useState(false)
+  // 打开交易员信息 Tab
+  const openTraderTab = useOpenTraderTab()
 
   // 获取钱包列表
   const fetchWallets = async () => {
@@ -283,20 +280,9 @@ export default function DemoPage() {
     }
   }
 
-  // 查看交易员信息（从跟单列表中点击）
-  const handleViewTraderInfo = async (address: string) => {
-    setViewingTraderLoading(true)
-    try {
-      const response = await apiClient<TraderInfo>(
-        `/api/v1/copy-trading/traders?address=${encodeURIComponent(address)}`
-      )
-      setViewingTraderInfo(response)
-      setViewTraderInfoModalVisible(true)
-    } catch (error: any) {
-      message.error(`获取交易员信息失败: ${error.message}`)
-    } finally {
-      setViewingTraderLoading(false)
-    }
+  // 查看交易员信息（从跟单列表中点击）：打开 Tab
+  const handleViewTraderInfo = (address: string) => {
+    openTraderTab(address)
   }
 
   // 创建跟单
@@ -1080,8 +1066,7 @@ export default function DemoPage() {
   const totals = calculateTotals()
 
   return (
-    <DashboardLayout>
-      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+    <Space direction="vertical" size="large" style={{ width: '100%' }}>
         {/* 总资产概览卡片 */}
         {wallets.length > 0 && (
           <Card>
@@ -1335,38 +1320,7 @@ export default function DemoPage() {
           subscription={currentSubscription}
         />
 
-        {/* 交易员信息查看窗口（从跟单列表点击） */}
-        {viewTraderInfoModalVisible && (
-          <>
-            {viewingTraderLoading ? (
-              <Modal
-                title="交易员信息"
-                open={viewTraderInfoModalVisible}
-                onCancel={() => {
-                  setViewTraderInfoModalVisible(false)
-                  setViewingTraderInfo(null)
-                }}
-                footer={null}
-                width={1400}
-              >
-                <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                  <Text type="secondary">正在加载交易员信息...</Text>
-                </div>
-              </Modal>
-            ) : viewingTraderInfo ? (
-              <TraderInfoModal
-                visible={viewTraderInfoModalVisible}
-                traderInfo={viewingTraderInfo}
-                onClose={() => {
-                  setViewTraderInfoModalVisible(false)
-                  setViewingTraderInfo(null)
-                }}
-              />
-            ) : null}
-          </>
-        )}
       </Space>
-    </DashboardLayout>
   )
 }
 

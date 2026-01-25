@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Modal, Descriptions, Table, Tag, Space, Alert, Typography, Card, Tabs, message } from 'antd'
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
 import { copyTradingApi } from '@/lib/api-client'
+import ReactECharts from 'echarts-for-react'
 
 const { Title, Text } = Typography
 
@@ -90,27 +91,9 @@ export default function TraderInfoModal({
     total: 0,
   })
 
-  if (!traderInfo) return null
-
-  // 当 modal 关闭时重置状态
-  useEffect(() => {
-    if (!visible) {
-      setActiveTab('current')
-      setHistoricalPositions([])
-      setHistoricalPagination({ page: 1, pageSize: 20, total: 0 })
-    }
-  }, [visible])
-
-  // 当切换到历史仓位 tab 时，加载数据
-  useEffect(() => {
-    if (visible && activeTab === 'historical' && traderInfo.address) {
-      fetchHistoricalPositions()
-    }
-  }, [visible, activeTab, traderInfo.address])
-
   // 获取历史仓位数据
-  const fetchHistoricalPositions = async (page = 1, pageSize = 20) => {
-    if (!traderInfo.address) return
+  const fetchHistoricalPositions = useCallback(async (page = 1, pageSize = 20) => {
+    if (!traderInfo?.address) return
 
     setHistoricalLoading(true)
     try {
@@ -127,12 +110,209 @@ export default function TraderInfoModal({
     } finally {
       setHistoricalLoading(false)
     }
-  }
+  }, [traderInfo?.address])
+
+  // 当 modal 关闭时重置状态
+  useEffect(() => {
+    if (!visible) {
+      setActiveTab('current')
+      setHistoricalPositions([])
+      setHistoricalPagination({ page: 1, pageSize: 20, total: 0 })
+    }
+  }, [visible])
+
+  // 当切换到历史仓位 tab 时，加载数据
+  useEffect(() => {
+    if (visible && activeTab === 'historical' && traderInfo?.address) {
+      fetchHistoricalPositions()
+    }
+  }, [visible, activeTab, traderInfo?.address, fetchHistoricalPositions])
+
+  if (!traderInfo) return null
 
   // 处理历史仓位表格分页变化
   const handleHistoricalTableChange = (page: number, pageSize: number) => {
     setHistoricalPagination(prev => ({ ...prev, page, pageSize }))
     fetchHistoricalPositions(page, pageSize)
+  }
+
+  // 生成 K 线图配置（使用模拟数据，后续可连接真实 API）
+  const getKlineOption = () => {
+    // 生成模拟 K 线数据（30 天，每天一根 K 线）
+    const dates: string[] = []
+    const klineData: number[][] = []
+    const volumes: number[] = []
+    
+    const now = Date.now()
+    const basePrice = 50000 // 基础价格（模拟 BTC 价格）
+    
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(now - i * 24 * 60 * 60 * 1000)
+      dates.push(date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }))
+      
+      // 生成模拟的 OHLC 数据
+      const open = basePrice + (Math.random() - 0.5) * 2000
+      const close = open + (Math.random() - 0.5) * 3000
+      const high = Math.max(open, close) + Math.random() * 1000
+      const low = Math.min(open, close) - Math.random() * 1000
+      const volume = Math.random() * 1000 + 500
+      
+      klineData.push([open, close, low, high])
+      volumes.push(volume)
+    }
+
+    return {
+      title: {
+        text: 'BTC/USDT K线图',
+        left: 'center',
+        textStyle: {
+          fontSize: 16,
+          fontWeight: 'bold',
+        },
+      },
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {
+          type: 'cross',
+        },
+        formatter: (params: any) => {
+          if (!params || !Array.isArray(params)) return ''
+          
+          // 找到 K 线系列的数据（seriesName 为 'K线' 或 seriesType 为 'candlestick'）
+          const klineData = params.find((p: any) => 
+            p.seriesName === 'K线' || p.seriesType === 'candlestick'
+          )
+          
+          if (!klineData || !klineData.value) return ''
+          
+          // K 线数据格式：[open, close, low, high]
+          const value = klineData.value
+          if (!Array.isArray(value) || value.length < 4) return ''
+          
+          const [open, close, low, high] = value.map(Number)
+          const change = close - open
+          const changePercent = ((change / open) * 100).toFixed(2)
+          const color = change >= 0 ? '#ef5350' : '#26a69a'
+          
+          // 获取成交量数据（如果有）
+          const volumeData = params.find((p: any) => 
+            p.seriesName === '成交量' || p.seriesType === 'bar'
+          )
+          const volume = volumeData && volumeData.value ? Number(volumeData.value).toFixed(2) : '--'
+          
+          return `
+            <div style="padding: 8px;">
+              <div><strong>${klineData.name || ''}</strong></div>
+              <div>开盘: <span style="color: #333;">$${open.toFixed(2)}</span></div>
+              <div>收盘: <span style="color: ${color};">$${close.toFixed(2)}</span></div>
+              <div>最高: <span style="color: #333;">$${high.toFixed(2)}</span></div>
+              <div>最低: <span style="color: #333;">$${low.toFixed(2)}</span></div>
+              <div>涨跌: <span style="color: ${color};">${change >= 0 ? '+' : ''}${change.toFixed(2)} (${changePercent}%)</span></div>
+              <div>成交量: <span style="color: #333;">${volume}</span></div>
+            </div>
+          `
+        },
+      },
+      grid: [
+        {
+          left: '10%',
+          right: '8%',
+          top: '15%',
+          height: '50%',
+        },
+        {
+          left: '10%',
+          right: '8%',
+          top: '70%',
+          height: '15%',
+        },
+      ],
+      xAxis: [
+        {
+          type: 'category',
+          data: dates,
+          scale: true,
+          boundaryGap: false,
+          axisLine: { onZero: false },
+          splitLine: { show: false },
+          splitNumber: 20,
+          min: 'dataMin',
+          max: 'dataMax',
+        },
+        {
+          type: 'category',
+          gridIndex: 1,
+          data: dates,
+          scale: true,
+          boundaryGap: false,
+          axisLine: { onZero: false },
+          axisTick: { show: false },
+          splitLine: { show: false },
+          axisLabel: { show: false },
+          min: 'dataMin',
+          max: 'dataMax',
+        },
+      ],
+      yAxis: [
+        {
+          scale: true,
+          splitArea: {
+            show: true,
+          },
+        },
+        {
+          scale: true,
+          gridIndex: 1,
+          splitNumber: 2,
+          axisLabel: { show: false },
+          axisLine: { show: false },
+          axisTick: { show: false },
+          splitLine: { show: false },
+        },
+      ],
+      dataZoom: [
+        {
+          type: 'inside',
+          xAxisIndex: [0, 1],
+          start: 50,
+          end: 100,
+        },
+        {
+          show: true,
+          xAxisIndex: [0, 1],
+          type: 'slider',
+          top: '90%',
+          start: 50,
+          end: 100,
+        },
+      ],
+      series: [
+        {
+          name: 'K线',
+          type: 'candlestick',
+          data: klineData,
+          itemStyle: {
+            color: '#ef5350', // 上涨颜色（红）
+            color0: '#26a69a', // 下跌颜色（绿）
+            borderColor: '#ef5350',
+            borderColor0: '#26a69a',
+          },
+        },
+        {
+          name: '成交量',
+          type: 'bar',
+          xAxisIndex: 1,
+          yAxisIndex: 1,
+          data: volumes,
+          itemStyle: {
+            color: (params: any) => {
+              const [open, close] = klineData[params.dataIndex]
+              return close >= open ? '#ef5350' : '#26a69a'
+            },
+          },
+        },
+      ],
+    }
   }
 
   // 格式化美元金额
@@ -352,7 +532,7 @@ export default function TraderInfoModal({
       }
       open={visible}
       onCancel={onClose}
-      width={1400}
+      width={1800}
       footer={[
         <Space key="actions">
           <button
@@ -509,6 +689,19 @@ export default function TraderInfoModal({
                         emptyText: historicalLoading ? '加载中...' : '暂无历史仓位记录',
                       }}
                     />
+                  ),
+                },
+                {
+                  key: 'kline',
+                  label: 'K线图',
+                  children: (
+                    <div style={{ width: '100%', height: '600px' }}>
+                      <ReactECharts
+                        option={getKlineOption()}
+                        style={{ width: '100%', height: '100%' }}
+                        opts={{ renderer: 'canvas' }}
+                      />
+                    </div>
                   ),
                 },
               ]}

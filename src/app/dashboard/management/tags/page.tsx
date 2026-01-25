@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { Card, Table, Button, Space, message, Tag, Popconfirm, Modal, Form, Input, Switch, ColorPicker } from 'antd'
 import { ReloadOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
-import DashboardLayout from '@/components/DashboardLayout'
 import { tagEnumApi } from '@/lib/api-client'
 import type { ColumnsType } from 'antd/es/table'
 
@@ -261,8 +260,7 @@ export default function TagManagementPage() {
   ]
 
   return (
-    <DashboardLayout>
-      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+    <Space direction="vertical" size="large" style={{ width: '100%' }}>
         <Card
           title="标签管理"
           extra={
@@ -389,7 +387,6 @@ export default function TagManagementPage() {
           </Form>
         </Modal>
       </Space>
-    </DashboardLayout>
   )
 }
 

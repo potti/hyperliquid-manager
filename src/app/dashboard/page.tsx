@@ -2,7 +2,6 @@
 
 import { Card, Typography, Row, Col, Statistic, Space, Avatar } from 'antd'
 import { UserOutlined, TeamOutlined, RiseOutlined, DollarOutlined } from '@ant-design/icons'
-import DashboardLayout from '@/components/DashboardLayout'
 import { useAuth } from '@/contexts/AuthContext'
 
 const { Title } = Typography
@@ -11,8 +10,7 @@ export default function Dashboard() {
   const { user } = useAuth()
 
   return (
-    <DashboardLayout>
-      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+    <Space direction="vertical" size="large" style={{ width: '100%' }}>
         <Card>
           <Space>
             <Avatar size={64} icon={<UserOutlined />} />
@@ -75,7 +73,6 @@ export default function Dashboard() {
           <p>左侧菜单提供了各种管理功能的入口。</p>
         </Card>
       </Space>
-    </DashboardLayout>
   )
 }
 

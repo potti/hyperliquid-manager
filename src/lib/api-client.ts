@@ -268,3 +268,23 @@ export const copyTradingApi = {
     get<{ positions: any[]; pagination: { page: number; pageSize: number; total: number } }>('/api/v1/copy-trading/historical-fills', params),
 }
 
+/**
+ * 市场K线相关 API
+ */
+export const marketKlineApi = {
+  // 获取K线数据
+  getKlines: (params: { symbol: string; interval?: string; start_time?: number; end_time?: number }) =>
+    get<{ klines: Array<{
+      id: string
+      symbol: string
+      interval: string
+      open_time: number
+      close_time: number
+      open: number
+      high: number
+      low: number
+      close: number
+      volume: number
+      created_at: number
+    }>; total: number }>('/api/v1/market/klines', params),
+}

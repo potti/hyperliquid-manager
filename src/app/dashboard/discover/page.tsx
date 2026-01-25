@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from 'react'
 import { Card, Table, Button, Space, message, Tooltip, Popover, Typography } from 'antd'
-import { ReloadOutlined, StarOutlined, StarFilled, InfoCircleOutlined } from '@ant-design/icons'
+import { ReloadOutlined, StarOutlined, StarFilled, InfoCircleOutlined, CopyOutlined } from '@ant-design/icons'
 
 const { Text, Title } = Typography
-import DashboardLayout from '@/components/DashboardLayout'
-import TraderInfoModal, { TraderInfo } from '@/components/copy-trading/TraderInfoModal'
+import { TraderInfo } from '@/components/copy-trading/TraderInfoModal'
 import CollectionModal from '@/components/collection/CollectionModal'
 import { apiClient } from '@/lib/api-client'
 import { collectionApi } from '@/lib/api-client'
+import { useOpenTraderTab } from '@/utils/tab-utils'
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table'
 import type { SorterResult, FilterValue } from 'antd/es/table/interface'
 
@@ -53,10 +53,8 @@ export default function DiscoverPage() {
     total: 0,
   })
 
-  // 交易员信息弹框相关状态
-  const [traderInfoModalVisible, setTraderInfoModalVisible] = useState(false)
-  const [currentTraderInfo, setCurrentTraderInfo] = useState<TraderInfo | null>(null)
-  const [traderInfoLoading, setTraderInfoLoading] = useState(false)
+  // 打开交易员信息 Tab
+  const openTraderTab = useOpenTraderTab()
 
   // 收藏相关状态
   const [collectionModalVisible, setCollectionModalVisible] = useState(false)
@@ -126,22 +124,32 @@ export default function DiscoverPage() {
     return `${address.slice(0, 6)}...${address.slice(-4)}`
   }
 
-  // 查看交易员信息
-  const handleViewTraderInfo = async (address: string) => {
-    setTraderInfoLoading(true)
-    setCurrentTraderInfo(null)
-    
+  // 复制地址到剪贴板
+  const handleCopyAddress = async (address: string) => {
     try {
-      const response = await apiClient<TraderInfo>(
-        `/api/v1/copy-trading/traders?address=${encodeURIComponent(address)}`
-      )
-      setCurrentTraderInfo(response)
-      setTraderInfoModalVisible(true)
-    } catch (error: any) {
-      message.error(`获取交易员信息失败: ${error.message}`)
-    } finally {
-      setTraderInfoLoading(false)
+      await navigator.clipboard.writeText(address)
+      message.success('地址已复制到剪贴板')
+    } catch (error) {
+      // 降级方案：使用传统方法
+      const textArea = document.createElement('textarea')
+      textArea.value = address
+      textArea.style.position = 'fixed'
+      textArea.style.opacity = '0'
+      document.body.appendChild(textArea)
+      textArea.select()
+      try {
+        document.execCommand('copy')
+        message.success('地址已复制到剪贴板')
+      } catch (err) {
+        message.error('复制失败，请手动复制')
+      }
+      document.body.removeChild(textArea)
     }
+  }
+
+  // 查看交易员信息：打开 Tab
+  const handleViewTraderInfo = (address: string) => {
+    openTraderTab(address)
   }
 
   // 格式化货币
@@ -210,25 +218,43 @@ export default function DiscoverPage() {
       title: '地址',
       dataIndex: 'address',
       key: 'address',
-      width: 150,
+      width: 180,
       fixed: 'left',
       render: (text: string) => (
-        <Tooltip title={text}>
-          <a
-            href="#"
-            onClick={(e) => {
-              e.preventDefault()
-              handleViewTraderInfo(text)
-            }}
-            style={{ 
-              fontFamily: 'monospace',
-              color: '#1890ff',
-              textDecoration: 'none'
-            }}
-          >
-            {formatAddress(text)}
-          </a>
-        </Tooltip>
+        <Space>
+          <Tooltip title={text}>
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault()
+                handleViewTraderInfo(text)
+              }}
+              style={{ 
+                fontFamily: 'monospace',
+                color: '#1890ff',
+                textDecoration: 'none'
+              }}
+            >
+              {formatAddress(text)}
+            </a>
+          </Tooltip>
+          <Tooltip title="复制地址">
+            <Button
+              type="text"
+              size="small"
+              icon={<CopyOutlined />}
+              onClick={(e) => {
+                e.stopPropagation()
+                handleCopyAddress(text)
+              }}
+              style={{ 
+                padding: '0 4px',
+                height: 'auto',
+                color: '#666'
+              }}
+            />
+          </Tooltip>
+        </Space>
       ),
     },
     {
@@ -477,8 +503,7 @@ export default function DiscoverPage() {
   )
 
   return (
-    <DashboardLayout>
-      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+    <Space direction="vertical" size="large" style={{ width: '100%' }}>
         <Card
           title="发现交易员"
           extra={
@@ -525,16 +550,6 @@ export default function DiscoverPage() {
           />
         </Card>
 
-        {/* 交易员信息弹框 */}
-        <TraderInfoModal
-          visible={traderInfoModalVisible}
-          traderInfo={currentTraderInfo}
-          onClose={() => {
-            setTraderInfoModalVisible(false)
-            setCurrentTraderInfo(null)
-          }}
-        />
-
         {/* 收藏弹窗 */}
         <CollectionModal
           visible={collectionModalVisible}
@@ -548,6 +563,5 @@ export default function DiscoverPage() {
           }}
         />
       </Space>
-    </DashboardLayout>
   )
 }
