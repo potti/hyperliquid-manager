@@ -1,18 +1,68 @@
 'use client'
 
-import { useParams } from 'next/navigation'
-import TraderInfoContent from '@/components/trader/TraderInfoContent'
+import { useState, useEffect, useCallback } from 'react'
+import { Descriptions, Table, Tag, Space, Alert, Typography, Card, Tabs, message, Spin } from 'antd'
+import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
+import { copyTradingApi, apiClient, marketKlineApi } from '@/lib/api-client'
+import ReactECharts from 'echarts-for-react'
+import type { TraderInfo } from '@/components/copy-trading/TraderInfoModal'
 
-export default function TraderInfoPage() {
-  const params = useParams()
-  const address = params.address as string
+const { Title, Text } = Typography
 
-  if (!address) {
-    return null
-  }
+// 交易员仓位类型
+interface TraderPosition {
+  coin: string
+  side: string
+  leverage: string
+  size: string
+  position_value: string
+  entry_price: string
+  mark_price: string
+  liquidation_px: string
+  unrealized_pnl: string
+  margin_used: string
+  return_on_equity: string
+}
 
-  return <TraderInfoContent address={address} />
+// 仓位汇总类型
+interface PositionSummary {
+  total_position_value: string
+  position_count: number
+  long_position_count: number
+  short_position_count: number
+  total_unrealized_pnl: string
+}
 
+// 历史仓位类型
+interface HistoricalPosition {
+  id: string
+  account_id: string
+  address: string
+  symbol: string
+  side: string
+  size: number
+  position_value: number
+  entry_price: number
+  last_entry_price: number
+  mark_price: number
+  liquidation_px: number
+  unrealized_pnl: number
+  margin_used: number
+  return_on_equity: number
+  leverage: number
+  status: string
+  close_price?: number
+  realized_pnl?: number
+  realized_pnl_pct?: number
+  created_at: number
+  updated_at: number
+}
+
+interface TraderInfoContentProps {
+  address: string
+}
+
+export default function TraderInfoContent({ address }: TraderInfoContentProps) {
   const [loading, setLoading] = useState(true)
   const [traderInfo, setTraderInfo] = useState<TraderInfo | null>(null)
   const [activeTab, setActiveTab] = useState('current')
@@ -593,8 +643,8 @@ export default function TraderInfoPage() {
       dataIndex: 'updated_at',
       key: 'updated_at',
       width: 180,
-      render: (timestamp: number) => {
-        if (!timestamp) return '--'
+      render: (timestamp: number, record: HistoricalPosition) => {
+        if (!timestamp || record.status === 'OPEN') return '--'
         return new Date(timestamp * 1000).toLocaleString('zh-CN')
       },
     },
@@ -615,8 +665,8 @@ export default function TraderInfoPage() {
       key: 'side',
       width: 80,
       render: (side: string) => (
-        <Tag color={side === 'long' ? 'green' : 'red'}>
-          {side === 'long' ? '做多' : '做空'}
+        <Tag color={side === 'Long' ? 'green' : 'red'}>
+          {side === 'Long' ? '做多' : '做空'}
         </Tag>
       ),
     },
@@ -625,65 +675,69 @@ export default function TraderInfoPage() {
       dataIndex: 'leverage',
       key: 'leverage',
       width: 80,
-      render: (text: string) => `${parseFloat(text).toFixed(1)}x`,
+      render: (leverage: string) => leverage,
     },
     {
       title: '数量',
       dataIndex: 'size',
       key: 'size',
       width: 120,
-      render: (text: string) => {
-        const num = parseFloat(text)
-        return Math.abs(num).toFixed(4)
-      },
+      render: (size: string) => size,
     },
     {
-      title: '仓位价值',
+      title: '持仓价值',
       dataIndex: 'position_value',
       key: 'position_value',
       width: 130,
-      render: (text: string) => formatUSD(text),
+      render: (value: string) => formatUSD(value),
     },
     {
       title: '开仓价格',
       dataIndex: 'entry_price',
       key: 'entry_price',
       width: 120,
-      render: (text: string) => text ? `$${parseFloat(text).toFixed(2)}` : '--',
+      render: (price: string) => formatUSD(price),
     },
     {
-      title: '强平价格',
+      title: '标记价格',
+      dataIndex: 'mark_price',
+      key: 'mark_price',
+      width: 120,
+      render: (price: string) => formatUSD(price),
+    },
+    {
+      title: '清算价格',
       dataIndex: 'liquidation_px',
       key: 'liquidation_px',
       width: 120,
-      render: (text: string) => text ? `$${parseFloat(text).toFixed(2)}` : '--',
+      render: (price: string) => formatUSD(price),
     },
     {
       title: '未实现盈亏',
       dataIndex: 'unrealized_pnl',
       key: 'unrealized_pnl',
       width: 130,
-      render: (text: string) => formatUSD(text),
+      render: (pnl: string) => formatUSD(pnl),
     },
     {
       title: '保证金',
       dataIndex: 'margin_used',
       key: 'margin_used',
       width: 120,
-      render: (text: string) => formatUSD(text),
+      render: (margin: string) => formatUSD(margin),
     },
     {
       title: 'ROE',
       dataIndex: 'return_on_equity',
       key: 'return_on_equity',
       width: 100,
-      render: (text: string) => formatPercent(text),
+      render: (roe: string) => formatPercent(roe),
     },
   ]
 
   if (loading) {
     return (
-      <div style={{ textAlign: 'center', padding: '40px 0' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
         <Spin size="large" tip="加载交易员信息中..." />
       </div>
     )
@@ -693,7 +747,7 @@ export default function TraderInfoPage() {
     return (
       <Alert
         message="获取交易员信息失败"
-        description="无法获取该交易员的信息，请检查地址是否正确。"
+        description="无法获取该地址的交易员信息，请检查地址是否正确。"
         type="error"
         showIcon
       />
@@ -702,86 +756,34 @@ export default function TraderInfoPage() {
 
   return (
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
-      {/* 标题和状态 */}
-      <Card size="small">
-        <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-          <Space>
-            <Title level={4} style={{ margin: 0 }}>交易员信息</Title>
+      {/* 交易员基本信息 */}
+      <Card>
+        <Title level={4}>交易员信息</Title>
+        <Descriptions bordered column={2}>
+          <Descriptions.Item label="地址">
+            <Text copyable={{ text: traderInfo.address }}>{formatAddress(traderInfo.address)}</Text>
+          </Descriptions.Item>
+          <Descriptions.Item label="注册状态">
             {traderInfo.is_registered ? (
-              <Tag icon={<CheckCircleOutlined />} color="success">已注册</Tag>
+              <Tag icon={<CheckCircleOutlined />} color="success">
+                已注册
+              </Tag>
             ) : (
-              <Tag icon={<CloseCircleOutlined />} color="default">未注册</Tag>
+              <Tag icon={<CloseCircleOutlined />} color="default">
+                未注册
+              </Tag>
             )}
-          </Space>
-          <Text copyable style={{ fontFamily: 'monospace', fontSize: 14 }}>
-            {traderInfo.address}
-          </Text>
-        </Space>
+          </Descriptions.Item>
+          {traderInfo.name && (
+            <Descriptions.Item label="名称">{traderInfo.name}</Descriptions.Item>
+          )}
+          {traderInfo.bio && (
+            <Descriptions.Item label="简介" span={2}>
+              {traderInfo.bio}
+            </Descriptions.Item>
+          )}
+        </Descriptions>
       </Card>
-
-      {!traderInfo.is_registered && (
-        <Alert
-          message="该地址未在 Hyperliquid 注册"
-          description="此交易员尚未在 Hyperliquid 平台注册，无法进行跟单操作。"
-          type="warning"
-          showIcon
-        />
-      )}
-
-      {/* 资金概览 */}
-      {traderInfo.is_registered && (
-        <Card title="资金概览" size="small">
-          <Space size="large" style={{ width: '100%', justifyContent: 'space-around' }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ color: '#999', fontSize: 14, marginBottom: 8 }}>总资产</div>
-              <div style={{ fontSize: 20, fontWeight: 'bold' }}>
-                {formatUSD(traderInfo.account_value)}
-              </div>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ color: '#999', fontSize: 14, marginBottom: 8 }}>未实现盈亏</div>
-              <div style={{ fontSize: 20, fontWeight: 'bold' }}>
-                {formatUSD(traderInfo.unrealized_pnl)}
-              </div>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ color: '#999', fontSize: 14, marginBottom: 8 }}>已用保证金</div>
-              <div style={{ fontSize: 20, fontWeight: 'bold' }}>
-                {formatUSD(traderInfo.margin_used)}
-              </div>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ color: '#999', fontSize: 14, marginBottom: 8 }}>可提现</div>
-              <div style={{ fontSize: 20, fontWeight: 'bold' }}>
-                {formatUSD(traderInfo.withdrawable)}
-              </div>
-            </div>
-          </Space>
-        </Card>
-      )}
-
-      {/* 仓位汇总 */}
-      {traderInfo.is_registered && (
-        <Card title="仓位汇总" size="small">
-          <Descriptions column={2} bordered size="small">
-            <Descriptions.Item label="总仓位价值">
-              {formatUSD(traderInfo.position_summary.total_position_value)}
-            </Descriptions.Item>
-            <Descriptions.Item label="仓位数量">
-              {traderInfo.position_summary.position_count}
-            </Descriptions.Item>
-            <Descriptions.Item label="多头仓位">
-              <Tag color="green">{traderInfo.position_summary.long_position_count}</Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="空头仓位">
-              <Tag color="red">{traderInfo.position_summary.short_position_count}</Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="总未实现盈亏" span={2}>
-              {formatUSD(traderInfo.position_summary.total_unrealized_pnl)}
-            </Descriptions.Item>
-          </Descriptions>
-        </Card>
-      )}
 
       {/* 仓位信息 - 使用 Tab */}
       {traderInfo.is_registered && (
