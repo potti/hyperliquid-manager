@@ -63,7 +63,7 @@ interface TraderInfoPageProps {
   address?: string // 如果通过 props 传递，优先使用 props
 }
 
-export default function TraderInfoPage({ address: addressProp }: TraderInfoPageProps = {}) {
+export default function TraderInfoPage({ address: addressProp }: TraderInfoPageProps) {
   const params = useParams()
   // 优先使用 props 中的 address，否则从路由参数获取
   const address = addressProp || (params.address as string)

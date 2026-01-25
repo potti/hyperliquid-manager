@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Modal, Checkbox, Space, message, Spin, Tag, Button } from 'antd'
 import { collectionApi, tagEnumApi } from '@/lib/api-client'
 
@@ -28,7 +28,7 @@ export default function CollectionModal({ visible, address, onClose, onSuccess }
   const [fetchingCollection, setFetchingCollection] = useState(false)
 
   // 获取标签枚举列表
-  const fetchTagEnums = async () => {
+  const fetchTagEnums = useCallback(async () => {
     setFetchingTags(true)
     try {
       const response = await tagEnumApi.getList()
@@ -38,10 +38,10 @@ export default function CollectionModal({ visible, address, onClose, onSuccess }
     } finally {
       setFetchingTags(false)
     }
-  }
+  }, [])
 
   // 获取当前地址的收藏信息
-  const fetchCollection = async () => {
+  const fetchCollection = useCallback(async () => {
     if (!address) return
     
     setFetchingCollection(true)
@@ -58,7 +58,7 @@ export default function CollectionModal({ visible, address, onClose, onSuccess }
     } finally {
       setFetchingCollection(false)
     }
-  }
+  }, [address])
 
   // 当弹窗打开时，获取数据
   useEffect(() => {
@@ -68,7 +68,7 @@ export default function CollectionModal({ visible, address, onClose, onSuccess }
     } else {
       setSelectedTags([])
     }
-  }, [visible, address])
+  }, [visible, address, fetchTagEnums, fetchCollection])
 
   // 处理保存
   const handleSave = async () => {
