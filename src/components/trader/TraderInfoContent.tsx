@@ -774,14 +774,6 @@ export default function TraderInfoContent({ address }: TraderInfoContentProps) {
               </Tag>
             )}
           </Descriptions.Item>
-          {traderInfo.name && (
-            <Descriptions.Item label="名称">{traderInfo.name}</Descriptions.Item>
-          )}
-          {traderInfo.bio && (
-            <Descriptions.Item label="简介" span={2}>
-              {traderInfo.bio}
-            </Descriptions.Item>
-          )}
         </Descriptions>
       </Card>
 
