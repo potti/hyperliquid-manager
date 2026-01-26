@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { Card, Table, Button, Space, Tag, Modal, Form, Input, message, Alert, Typography } from 'antd'
-import { PlusOutlined, DownloadOutlined, SwapOutlined, UploadOutlined, KeyOutlined, CopyOutlined } from '@ant-design/icons'
+import { PlusOutlined, DownloadOutlined, SwapOutlined, UploadOutlined, KeyOutlined, CopyOutlined, DeleteOutlined } from '@ant-design/icons'
 import { apiClient } from '@/lib/api-client'
+import { copyTradingApi } from '@/lib/api-client'
 import DepositModal from '@/components/wallet/DepositModal'
 import AddTraderModal from '@/components/copy-trading/AddTraderModal'
 import TraderSubscribeModal, { TraderInfo, SubscribeFormValues } from '@/components/copy-trading/TraderSubscribeModal'
@@ -597,6 +598,30 @@ export default function DemoPage() {
     })
   }
 
+  // 删除跟单（物理删除）
+  const handleDeleteSubscription = async (subscription: CopyTradeSubscription) => {
+    Modal.confirm({
+      title: '确认删除跟单',
+      content: `确定要永久删除跟单"${subscription.name}"吗？此操作不可恢复！`,
+      okText: '确认删除',
+      cancelText: '取消',
+      okType: 'danger',
+      onOk: async () => {
+        setStopLoading(subscription.id)
+        try {
+          await copyTradingApi.deleteSubscription(subscription.id)
+          message.success('跟单已删除')
+          // 刷新跟单列表
+          await fetchCopyTradingList()
+        } catch (error: any) {
+          message.error(`删除跟单失败: ${error.message}`)
+        } finally {
+          setStopLoading(null)
+        }
+      },
+    })
+  }
+
   // 组件挂载时获取钱包列表、跟单列表和仓位列表
   useEffect(() => {
     fetchWallets()
@@ -853,7 +878,7 @@ export default function DemoPage() {
       title: '操作',
       key: 'action',
       fixed: 'right' as const,
-      width: 150,
+      width: 200,
       render: (_: any, record: CopyTradeSubscription) => {
         const isStopped = record.status === 'stopped'
         return (
@@ -888,6 +913,17 @@ export default function DemoPage() {
                 停止
               </Button>
             )}
+            <Button 
+              type="link" 
+              size="small" 
+              danger 
+              icon={<DeleteOutlined />}
+              onClick={() => handleDeleteSubscription(record)}
+              loading={stopLoading === record.id}
+              disabled={stopLoading !== null}
+            >
+              删除
+            </Button>
           </Space>
         )
       },

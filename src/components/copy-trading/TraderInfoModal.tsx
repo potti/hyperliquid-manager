@@ -45,6 +45,13 @@ export interface TraderStats {
   recent_30_days_trade_count: number  // 最近30天内交易数量
 }
 
+// 净值曲线数据点类型
+export interface EquityPoint {
+  timestamp: number  // Unix 时间戳（秒）
+  equity: number     // 账户净值
+  pnl: number        // 累计盈亏
+}
+
 // 交易员信息类型
 export interface TraderInfo {
   address: string
@@ -56,6 +63,7 @@ export interface TraderInfo {
   position_summary: PositionSummary
   positions?: TraderPosition[]
   stats?: TraderStats                  // 交易统计信息（可选）
+  equity_curve?: EquityPoint[]        // 资金变化曲线（净值曲线，可选）
 }
 
 interface TraderInfoModalProps {

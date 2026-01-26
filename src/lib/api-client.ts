@@ -266,6 +266,11 @@ export const copyTradingApi = {
   // 获取历史已成交交易记录
   getHistoricalFills: (params: { address: string; page?: number; pageSize?: number; startTime?: number; endTime?: number }) =>
     get<{ positions: any[]; pagination: { page: number; pageSize: number; total: number } }>('/api/v1/copy-trading/historical-fills', params),
+  // 物理删除跟单
+  deleteSubscription: (id: string) =>
+    apiClient(`/api/v1/copy-trading/subscribe/${id}/delete`, {
+      method: 'DELETE',
+    }),
 }
 
 /**

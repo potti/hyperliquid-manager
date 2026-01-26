@@ -772,29 +772,163 @@ export default function TraderInfoContent({ address }: TraderInfoContentProps) {
     )
   }
 
+  // 生成资金变化曲线图配置
+  const getEquityCurveOption = () => {
+    if (!traderInfo.equity_curve || traderInfo.equity_curve.length === 0) {
+      return {
+        title: {
+          text: '资金变化曲线',
+          left: 'center',
+        },
+        tooltip: {
+          trigger: 'axis',
+        },
+        xAxis: {
+          type: 'category',
+          data: [],
+        },
+        yAxis: {
+          type: 'value',
+          name: '净值 ($)',
+        },
+        series: [],
+      }
+    }
+
+    const dates: string[] = []
+    const equityData: number[] = []
+    const pnlData: number[] = []
+
+    traderInfo.equity_curve.forEach((point) => {
+      const date = new Date(point.timestamp * 1000)
+      dates.push(date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }) + 
+                 ' ' + 
+                 date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }))
+      equityData.push(point.equity)
+      pnlData.push(point.pnl)
+    })
+
+    return {
+      title: {
+        text: '资金变化曲线',
+        left: 'center',
+        textStyle: {
+          fontSize: 16,
+          fontWeight: 'bold',
+        },
+      },
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {
+          type: 'cross',
+        },
+        formatter: (params: any) => {
+          if (!params || !Array.isArray(params)) return ''
+          let result = `<div style="padding: 8px;"><div><strong>${params[0].name || ''}</strong></div>`
+          params.forEach((param: any) => {
+            if (param.seriesName === '账户净值') {
+              result += `<div>${param.seriesName}: <span style="color: #1890ff;">$${param.value.toFixed(2)}</span></div>`
+            } else if (param.seriesName === '累计盈亏') {
+              const color = param.value >= 0 ? '#52c41a' : '#ff4d4f'
+              result += `<div>${param.seriesName}: <span style="color: ${color};">${param.value >= 0 ? '+' : ''}$${param.value.toFixed(2)}</span></div>`
+            }
+          })
+          result += '</div>'
+          return result
+        },
+      },
+      legend: {
+        data: ['账户净值', '累计盈亏'],
+        top: 30,
+      },
+      grid: {
+        left: '10%',
+        right: '8%',
+        top: '20%',
+        bottom: '15%',
+      },
+      xAxis: {
+        type: 'category',
+        data: dates,
+        boundaryGap: false,
+        axisLabel: {
+          rotate: 45,
+          fontSize: 10,
+        },
+      },
+      yAxis: [
+        {
+          type: 'value',
+          name: '净值 ($)',
+          position: 'left',
+          axisLabel: {
+            formatter: '${value}',
+          },
+        },
+        {
+          type: 'value',
+          name: '盈亏 ($)',
+          position: 'right',
+          axisLabel: {
+            formatter: '${value}',
+          },
+        },
+      ],
+      dataZoom: [
+        {
+          type: 'inside',
+          start: 0,
+          end: 100,
+        },
+        {
+          show: true,
+          type: 'slider',
+          top: '90%',
+          start: 0,
+          end: 100,
+        },
+      ],
+      series: [
+        {
+          name: '账户净值',
+          type: 'line',
+          data: equityData,
+          smooth: true,
+          itemStyle: {
+            color: '#1890ff',
+          },
+          areaStyle: {
+            color: {
+              type: 'linear',
+              x: 0,
+              y: 0,
+              x2: 0,
+              y2: 1,
+              colorStops: [
+                { offset: 0, color: 'rgba(24, 144, 255, 0.3)' },
+                { offset: 1, color: 'rgba(24, 144, 255, 0.1)' },
+              ],
+            },
+          },
+        },
+        {
+          name: '累计盈亏',
+          type: 'line',
+          yAxisIndex: 1,
+          data: pnlData,
+          smooth: true,
+          itemStyle: {
+            color: (params: any) => {
+              return params.value >= 0 ? '#52c41a' : '#ff4d4f'
+            },
+          },
+        },
+      ],
+    }
+  }
+
   return (
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
-      {/* 交易员基本信息 */}
-      <Card>
-        <Title level={4}>交易员信息</Title>
-        <Descriptions bordered column={2}>
-          <Descriptions.Item label="地址">
-            <Text copyable={{ text: traderInfo.address }}>{formatAddress(traderInfo.address)}</Text>
-          </Descriptions.Item>
-          <Descriptions.Item label="注册状态">
-            {traderInfo.is_registered ? (
-              <Tag icon={<CheckCircleOutlined />} color="success">
-                已注册
-              </Tag>
-            ) : (
-              <Tag icon={<CloseCircleOutlined />} color="default">
-                未注册
-              </Tag>
-            )}
-          </Descriptions.Item>
-        </Descriptions>
-      </Card>
-
       {/* 资金概览 */}
       {traderInfo.is_registered && (
         <Card title="资金概览" size="small">
@@ -861,6 +995,19 @@ export default function TraderInfoContent({ address }: TraderInfoContentProps) {
               {traderInfo.stats.recent_30_days_trade_count}
             </Descriptions.Item>
           </Descriptions>
+        </Card>
+      )}
+
+      {/* 资金变化曲线图 */}
+      {traderInfo.is_registered && traderInfo.equity_curve && traderInfo.equity_curve.length > 0 && (
+        <Card title="资金变化曲线" size="small">
+          <div style={{ width: '100%', height: '400px' }}>
+            <ReactECharts
+              option={getEquityCurveOption()}
+              style={{ width: '100%', height: '100%' }}
+              opts={{ renderer: 'canvas' }}
+            />
+          </div>
         </Card>
       )}
 
