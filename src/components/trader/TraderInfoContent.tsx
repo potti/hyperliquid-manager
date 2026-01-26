@@ -244,9 +244,24 @@ export default function TraderInfoContent({ address }: TraderInfoContentProps) {
       }
     }
 
+    // 计算K线数据的最高价和最低价，用于标记位置
+    let maxPrice = 0
+    let minPrice = Infinity
+    klineChartData.forEach((kline) => {
+      const [, , low, high] = kline
+      if (high > maxPrice) maxPrice = high
+      if (low < minPrice) minPrice = low
+    })
+    // 如果使用模拟数据，设置默认值
+    if (maxPrice === 0) {
+      maxPrice = 52000
+      minPrice = 48000
+    }
+
     // 从历史仓位数据中提取买入和卖出标记（仅显示BTC交易）
-    const buyMarkers: any[] = [] // 买入标记（开仓）
-    const sellMarkers: any[] = [] // 卖出标记（平仓）
+    // 使用 markLine 在对应时间点画垂直线，并在顶部显示标签
+    const buyMarkLines: any[] = [] // 买入标记（开仓）
+    const sellMarkLines: any[] = [] // 卖出标记（平仓）
 
     // 过滤出BTC相关的交易记录
     const btcPositions = historicalPositions.filter((position) => {
@@ -274,28 +289,28 @@ export default function TraderInfoContent({ address }: TraderInfoContentProps) {
         if (minDiff < 7 * 24 * 60 * 60 * 1000) {
           const side = position.side === 'Long' ? '做多' : '做空'
           const markerColor = position.side === 'Long' ? '#52c41a' : '#ff4d4f'
-          buyMarkers.push({
+          buyMarkLines.push({
             name: `${side}开仓`,
-            coord: [closestIndex, position.entry_price],
-            value: position.entry_price,
-            itemStyle: {
+            xAxis: closestIndex, // 在对应的时间点画垂直线
+            lineStyle: {
               color: markerColor,
-              borderColor: markerColor,
-              borderWidth: 2,
+              width: 2,
+              type: 'dashed', // 虚线
             },
-            symbol: 'triangle', // 向上三角形表示买入
-            symbolSize: [16, 16],
             label: {
               show: true,
-              position: 'top',
-              formatter: `{b}\n$${position.entry_price.toFixed(2)}`,
+              position: 'start', // 标签显示在线的起点（顶部）
+              formatter: `${side}开仓\n$${position.entry_price.toFixed(2)}`,
               color: markerColor,
               fontSize: 11,
               fontWeight: 'bold',
-              backgroundColor: 'rgba(255, 255, 255, 0.8)',
-              padding: [2, 4],
+              backgroundColor: 'rgba(255, 255, 255, 0.9)',
+              padding: [4, 6],
               borderRadius: 4,
+              borderColor: markerColor,
+              borderWidth: 1,
             },
+            symbol: ['none', 'none'], // 不显示端点符号
           })
         }
       }
@@ -316,34 +331,42 @@ export default function TraderInfoContent({ address }: TraderInfoContentProps) {
         
         // 如果时间差在合理范围内（比如7天内），添加标记
         if (minDiff < 7 * 24 * 60 * 60 * 1000) {
-          const pnl = position.realized_pnl || 0
-          const pnlColor = pnl >= 0 ? '#52c41a' : '#ff4d4f'
-          sellMarkers.push({
+          // 平仓标记颜色：根据原仓位方向决定（做多用绿色，做空用红色）
+          const sideColor = position.side === 'Long' ? '#52c41a' : '#ff4d4f'
+          sellMarkLines.push({
             name: '平仓',
-            coord: [closestIndex, position.close_price],
-            value: position.close_price,
-            itemStyle: {
-              color: pnlColor,
-              borderColor: pnlColor,
-              borderWidth: 2,
+            xAxis: closestIndex, // 在对应的时间点画垂直线
+            lineStyle: {
+              color: sideColor,
+              width: 2,
+              type: 'dashed', // 虚线
             },
-            symbol: 'pin', // 向下箭头表示卖出
-            symbolRotate: 180,
-            symbolSize: [16, 16],
             label: {
               show: true,
-              position: 'bottom',
-              formatter: `平仓\n$${position.close_price.toFixed(2)}\n${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`,
-              color: pnlColor,
+              position: 'start', // 标签显示在线的起点（顶部）
+              formatter: `平仓\n$${position.close_price.toFixed(2)}`,
+              color: sideColor,
               fontSize: 11,
               fontWeight: 'bold',
-              backgroundColor: 'rgba(255, 255, 255, 0.8)',
-              padding: [2, 4],
+              backgroundColor: 'rgba(255, 255, 255, 0.9)',
+              padding: [4, 6],
               borderRadius: 4,
+              borderColor: sideColor,
+              borderWidth: 1,
             },
+            symbol: ['none', 'none'], // 不显示端点符号
           })
         }
       }
+    })
+
+    // 调试：检查是否有标记数据
+    console.log('K线标记数据:', {
+      btcPositionsCount: btcPositions.length,
+      buyMarkLinesCount: buyMarkLines.length,
+      sellMarkLinesCount: sellMarkLines.length,
+      maxPrice,
+      minPrice,
     })
 
     return {
@@ -399,8 +422,8 @@ export default function TraderInfoContent({ address }: TraderInfoContentProps) {
         {
           left: '10%',
           right: '8%',
-          top: '15%',
-          height: '50%',
+          top: '20%', // 增加顶部空间，为标记留出位置
+          height: '45%',
         },
         {
           left: '10%',
@@ -492,16 +515,11 @@ export default function TraderInfoContent({ address }: TraderInfoContentProps) {
             borderColor: '#ef5350',
             borderColor0: '#26a69a',
           },
-          markPoint: {
+          markLine: {
             data: [
-              ...buyMarkers,
-              ...sellMarkers,
+              ...buyMarkLines,
+              ...sellMarkLines,
             ],
-            symbolSize: 60,
-            label: {
-              fontSize: 11,
-              fontWeight: 'bold',
-            },
             animation: true,
           },
         },
@@ -776,6 +794,75 @@ export default function TraderInfoContent({ address }: TraderInfoContentProps) {
           </Descriptions.Item>
         </Descriptions>
       </Card>
+
+      {/* 资金概览 */}
+      {traderInfo.is_registered && (
+        <Card title="资金概览" size="small">
+          <Space size="large" style={{ width: '100%', justifyContent: 'space-around' }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ color: '#999', fontSize: 14, marginBottom: 8 }}>总资产</div>
+              <div style={{ fontSize: 20, fontWeight: 'bold' }}>
+                {formatUSD(traderInfo.account_value)}
+              </div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ color: '#999', fontSize: 14, marginBottom: 8 }}>未实现盈亏</div>
+              <div style={{ fontSize: 20, fontWeight: 'bold' }}>
+                {formatUSD(traderInfo.unrealized_pnl)}
+              </div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ color: '#999', fontSize: 14, marginBottom: 8 }}>已用保证金</div>
+              <div style={{ fontSize: 20, fontWeight: 'bold' }}>
+                {formatUSD(traderInfo.margin_used)}
+              </div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ color: '#999', fontSize: 14, marginBottom: 8 }}>可提现</div>
+              <div style={{ fontSize: 20, fontWeight: 'bold' }}>
+                {formatUSD(traderInfo.withdrawable)}
+              </div>
+            </div>
+          </Space>
+        </Card>
+      )}
+
+      {/* 交易统计信息 */}
+      {traderInfo.is_registered && traderInfo.stats && (
+        <Card title="交易统计" size="small">
+          <Descriptions bordered column={2} size="small">
+            <Descriptions.Item label="总收益">
+              {formatUSD(traderInfo.stats.total_realized_pnl.toString())}
+            </Descriptions.Item>
+            <Descriptions.Item label="总收益率">
+              {formatPercent(traderInfo.stats.total_realized_pnl_pct.toString())}
+            </Descriptions.Item>
+            <Descriptions.Item label="胜率">
+              <Text strong style={{ color: traderInfo.stats.win_rate >= 50 ? '#52c41a' : '#ff4d4f' }}>
+                {traderInfo.stats.win_rate.toFixed(2)}%
+              </Text>
+            </Descriptions.Item>
+            <Descriptions.Item label="总交易次数">
+              {traderInfo.stats.total_positions}
+            </Descriptions.Item>
+            <Descriptions.Item label="盈利次数">
+              <Tag color="green">{traderInfo.stats.win_positions}</Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="亏损次数">
+              <Tag color="red">{traderInfo.stats.loss_positions}</Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="平均盈亏">
+              {formatUSD(traderInfo.stats.avg_realized_pnl.toString())}
+            </Descriptions.Item>
+            <Descriptions.Item label="盈亏比">
+              {traderInfo.stats.profit_loss_ratio > 0 ? traderInfo.stats.profit_loss_ratio.toFixed(2) : '--'}
+            </Descriptions.Item>
+            <Descriptions.Item label="最近30天交易数" span={2}>
+              {traderInfo.stats.recent_30_days_trade_count}
+            </Descriptions.Item>
+          </Descriptions>
+        </Card>
+      )}
 
       {/* 仓位信息 - 使用 Tab */}
       {traderInfo.is_registered && (

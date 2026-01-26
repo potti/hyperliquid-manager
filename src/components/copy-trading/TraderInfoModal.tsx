@@ -32,6 +32,19 @@ interface PositionSummary {
   total_unrealized_pnl: string
 }
 
+// 交易统计信息类型
+export interface TraderStats {
+  total_realized_pnl: number          // 总已实现盈亏（总收益）
+  total_realized_pnl_pct: number      // 总已实现盈亏百分比
+  win_rate: number                     // 胜率（百分比）
+  total_positions: number              // 总交易次数
+  win_positions: number                // 盈利次数
+  loss_positions: number               // 亏损次数
+  avg_realized_pnl: number            // 平均已实现盈亏
+  profit_loss_ratio: number           // 盈亏比
+  recent_30_days_trade_count: number  // 最近30天内交易数量
+}
+
 // 交易员信息类型
 export interface TraderInfo {
   address: string
@@ -42,6 +55,7 @@ export interface TraderInfo {
   is_registered: boolean
   position_summary: PositionSummary
   positions?: TraderPosition[]
+  stats?: TraderStats                  // 交易统计信息（可选）
 }
 
 interface TraderInfoModalProps {

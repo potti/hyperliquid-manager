@@ -30,6 +30,7 @@ interface TraderData {
   short_win_count: number         // 做空盈利次数
   last_trade_time: number         // 最后交易时间（时间戳）
   trade_interval: number          // 平均交易间隔（秒）
+  recent_30_days_trade_count: number // 最近30天内交易数量
   // 盈亏指标
   profit_loss_ratio?: number      // 盈亏比
   // 风险指标
@@ -318,6 +319,14 @@ export default function DiscoverPage() {
       key: 'total_positions',
       width: 100,
       sorter: (a, b) => a.total_positions - b.total_positions,
+      render: (value: number) => value || 0,
+    },
+    {
+      title: '30天交易数',
+      dataIndex: 'recent_30_days_trade_count',
+      key: 'recent_30_days_trade_count',
+      width: 110,
+      sorter: (a, b) => (a.recent_30_days_trade_count || 0) - (b.recent_30_days_trade_count || 0),
       render: (value: number) => value || 0,
     },
     {
