@@ -700,7 +700,10 @@ export default function TraderInfoContent({ address }: TraderInfoContentProps) {
       dataIndex: 'size',
       key: 'size',
       width: 120,
-      render: (size: string) => size,
+      render: (size: string) => {
+        const num = parseFloat(size)
+        return Math.abs(num).toFixed(4)
+      },
     },
     {
       title: '持仓价值',
