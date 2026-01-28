@@ -91,8 +91,31 @@ export default function DiscoverPage() {
       return
     }
 
-    // 直接打开交易员详情页
-    openTraderTab(address)
+    setSearchLoading(true)
+    try {
+      // 1. 先调用添加巨鲸地址接口
+      const response = await copyTradingApi.addWhaleAddress(address)
+      
+      if (response.already_exists) {
+        message.info(response.message)
+      } else {
+        message.success(response.message)
+        // 刷新交易员列表
+        await fetchTraders()
+      }
+      
+      // 2. 打开交易员详情页
+      openTraderTab(address)
+      
+      // 3. 清空搜索框
+      setSearchAddress('')
+    } catch (error: any) {
+      message.error(`添加失败: ${error.message}`)
+      // 即使添加失败，也打开详情页（可能是其他错误）
+      openTraderTab(address)
+    } finally {
+      setSearchLoading(false)
+    }
   }
 
   // 获取已收藏的地址列表

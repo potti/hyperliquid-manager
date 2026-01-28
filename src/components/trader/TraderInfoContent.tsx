@@ -82,6 +82,7 @@ export default function TraderInfoContent({ address }: TraderInfoContentProps) {
     volume: number
   }>>([])
   const [klineLoading, setKlineLoading] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
 
   // 获取交易员信息
   const fetchTraderInfo = useCallback(async () => {
@@ -144,6 +145,25 @@ export default function TraderInfoContent({ address }: TraderInfoContentProps) {
   useEffect(() => {
     fetchTraderInfo()
   }, [fetchTraderInfo])
+
+  // 刷新交易员数据（包括历史数据）
+  const handleRefresh = useCallback(async () => {
+    if (!address || refreshing) return
+
+    setRefreshing(true)
+    try {
+      // 调用刷新历史数据接口，该接口会返回最新的交易员信息
+      const response = await copyTradingApi.refreshHistory(address)
+      
+      // 直接更新页面数据
+      setTraderInfo(response)
+      message.success('数据已刷新')
+    } catch (error: any) {
+      message.error(`刷新失败: ${error.message}`)
+    } finally {
+      setRefreshing(false)
+    }
+  }, [address, refreshing])
 
   // 获取K线数据
   const fetchKlineData = useCallback(async () => {
@@ -940,8 +960,8 @@ export default function TraderInfoContent({ address }: TraderInfoContentProps) {
           extra={
             <Button 
               icon={<ReloadOutlined />}
-              onClick={fetchTraderInfo}
-              loading={loading}
+              onClick={handleRefresh}
+              loading={refreshing}
               size="small"
             >
               刷新

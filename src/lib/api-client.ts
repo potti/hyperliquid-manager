@@ -271,6 +271,18 @@ export const copyTradingApi = {
     apiClient(`/api/v1/copy-trading/subscribe/${id}/delete`, {
       method: 'DELETE',
     }),
+  // 刷新交易员历史数据（返回完整的交易员信息）
+  refreshHistory: (address: string) =>
+    apiClient<any>('/api/v1/copy-trading/refresh-history', {
+      method: 'POST',
+      body: JSON.stringify({ address }),
+    }),
+  // 添加巨鲸地址
+  addWhaleAddress: (address: string) =>
+    apiClient<{ message: string; address: string; already_exists: boolean }>('/api/v1/copy-trading/add-whale', {
+      method: 'POST',
+      body: JSON.stringify({ address }),
+    }),
 }
 
 /**
