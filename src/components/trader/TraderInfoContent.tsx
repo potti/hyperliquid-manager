@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Descriptions, Table, Tag, Space, Alert, Typography, Card, Tabs, message, Spin, Button } from 'antd'
-import { CheckCircleOutlined, CloseCircleOutlined, ReloadOutlined } from '@ant-design/icons'
-import { copyTradingApi, apiClient, marketKlineApi } from '@/lib/api-client'
+import { CheckCircleOutlined, CloseCircleOutlined, ReloadOutlined, StarOutlined, StarFilled } from '@ant-design/icons'
+import { copyTradingApi, apiClient, marketKlineApi, collectionApi } from '@/lib/api-client'
 import ReactECharts from 'echarts-for-react'
 import type { TraderInfo } from '@/components/copy-trading/TraderInfoModal'
 
@@ -83,6 +83,8 @@ export default function TraderInfoContent({ address }: TraderInfoContentProps) {
   }>>([])
   const [klineLoading, setKlineLoading] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
+  const [isFavorite, setIsFavorite] = useState(false)
+  const [favoriteLoading, setFavoriteLoading] = useState(false)
 
   // 获取交易员信息
   const fetchTraderInfo = useCallback(async () => {
@@ -144,7 +146,45 @@ export default function TraderInfoContent({ address }: TraderInfoContentProps) {
   // 组件挂载时获取交易员信息
   useEffect(() => {
     fetchTraderInfo()
-  }, [fetchTraderInfo])
+    checkFavoriteStatus()
+  }, [fetchTraderInfo, checkFavoriteStatus])
+
+  // 检查收藏状态
+  const checkFavoriteStatus = useCallback(async () => {
+    if (!address) return
+    
+    try {
+      const response = await collectionApi.getByAddress(address)
+      setIsFavorite(!!response)
+    } catch (error: any) {
+      // 如果接口返回404，说明没有收藏
+      setIsFavorite(false)
+    }
+  }, [address])
+
+  // 切换收藏状态
+  const handleToggleFavorite = useCallback(async () => {
+    if (!address || favoriteLoading) return
+
+    setFavoriteLoading(true)
+    try {
+      if (isFavorite) {
+        // 取消收藏
+        await collectionApi.delete(address)
+        setIsFavorite(false)
+        message.success('已取消收藏')
+      } else {
+        // 添加收藏（不添加任何标签）
+        await collectionApi.createOrUpdate({ address, tags: [] })
+        setIsFavorite(true)
+        message.success('已添加收藏')
+      }
+    } catch (error: any) {
+      message.error(`操作失败: ${error.message}`)
+    } finally {
+      setFavoriteLoading(false)
+    }
+  }, [address, isFavorite, favoriteLoading])
 
   // 刷新交易员数据（包括历史数据）
   const handleRefresh = useCallback(async () => {
@@ -958,14 +998,25 @@ export default function TraderInfoContent({ address }: TraderInfoContentProps) {
           title="资金概览" 
           size="small"
           extra={
-            <Button 
-              icon={<ReloadOutlined />}
-              onClick={handleRefresh}
-              loading={refreshing}
-              size="small"
-            >
-              刷新
-            </Button>
+            <Space>
+              <Button 
+                icon={isFavorite ? <StarFilled /> : <StarOutlined />}
+                onClick={handleToggleFavorite}
+                loading={favoriteLoading}
+                size="small"
+                type={isFavorite ? 'primary' : 'default'}
+              >
+                {isFavorite ? '已收藏' : '收藏'}
+              </Button>
+              <Button 
+                icon={<ReloadOutlined />}
+                onClick={handleRefresh}
+                loading={refreshing}
+                size="small"
+              >
+                刷新
+              </Button>
+            </Space>
           }
         >
           <Space size="large" style={{ width: '100%', justifyContent: 'space-around' }}>

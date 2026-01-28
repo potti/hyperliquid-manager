@@ -5,6 +5,7 @@ import { Card, Table, Button, Space, message, Tag, Popconfirm, Tooltip } from 'a
 import { ReloadOutlined, StarOutlined, StarFilled, DeleteOutlined } from '@ant-design/icons'
 import CollectionModal from '@/components/collection/CollectionModal'
 import { collectionApi, tagEnumApi } from '@/lib/api-client'
+import { useOpenTraderTab } from '@/utils/tab-utils'
 import type { ColumnsType } from 'antd/es/table'
 
 // 收藏数据类型
@@ -30,6 +31,9 @@ export default function CollectionsPage() {
   const [tagMap, setTagMap] = useState<Record<string, TagInfo>>({})
   const [collectionModalVisible, setCollectionModalVisible] = useState(false)
   const [currentAddress, setCurrentAddress] = useState<string>('')
+  
+  // 打开交易员信息 Tab
+  const openTraderTab = useOpenTraderTab()
 
   // 获取标签映射
   const fetchTagMap = async () => {
@@ -101,8 +105,16 @@ export default function CollectionsPage() {
       width: 200,
       fixed: 'left',
       render: (text: string) => (
-        <Tooltip title={text}>
-          <span style={{ fontFamily: 'monospace', color: '#1890ff' }}>
+        <Tooltip title="点击查看交易员详情">
+          <span 
+            style={{ 
+              fontFamily: 'monospace', 
+              color: '#1890ff', 
+              cursor: 'pointer',
+              textDecoration: 'underline'
+            }}
+            onClick={() => openTraderTab(text)}
+          >
             {formatAddress(text)}
           </span>
         </Tooltip>
