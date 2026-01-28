@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Card, Table, Button, Space, message, Tooltip, Popover, Typography } from 'antd'
-import { ReloadOutlined, StarOutlined, StarFilled, InfoCircleOutlined, CopyOutlined } from '@ant-design/icons'
+import { Card, Table, Button, Space, message, Tooltip, Popover, Typography, Input } from 'antd'
+import { ReloadOutlined, StarOutlined, StarFilled, InfoCircleOutlined, CopyOutlined, SearchOutlined } from '@ant-design/icons'
 
 const { Text, Title } = Typography
 import { TraderInfo } from '@/components/copy-trading/TraderInfoModal'
@@ -62,6 +62,10 @@ export default function DiscoverPage() {
   const [currentCollectionAddress, setCurrentCollectionAddress] = useState<string>('')
   const [collectedAddresses, setCollectedAddresses] = useState<Set<string>>(new Set())
 
+  // 搜索相关状态
+  const [searchAddress, setSearchAddress] = useState<string>('')
+  const [searchLoading, setSearchLoading] = useState(false)
+
   // 获取交易员列表
   const fetchTraders = async () => {
     setLoading(true)
@@ -77,6 +81,18 @@ export default function DiscoverPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // 搜索交易员
+  const handleSearchTrader = async () => {
+    const address = searchAddress.trim()
+    if (!address) {
+      message.warning('请输入交易员地址')
+      return
+    }
+
+    // 直接打开交易员详情页
+    openTraderTab(address)
   }
 
   // 获取已收藏的地址列表
@@ -530,6 +546,22 @@ export default function DiscoverPage() {
                   style={{ color: '#1890ff' }}
                 />
               </Popover>
+              <Input
+                placeholder="输入交易员地址"
+                value={searchAddress}
+                onChange={(e) => setSearchAddress(e.target.value)}
+                onPressEnter={handleSearchTrader}
+                style={{ width: 300 }}
+                allowClear
+              />
+              <Button 
+                icon={<SearchOutlined />}
+                onClick={handleSearchTrader}
+                loading={searchLoading}
+                type="primary"
+              >
+                查找
+              </Button>
               <Button 
                 icon={<ReloadOutlined />}
                 onClick={fetchTraders}

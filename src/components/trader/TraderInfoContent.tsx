@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Descriptions, Table, Tag, Space, Alert, Typography, Card, Tabs, message, Spin } from 'antd'
-import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
+import { Descriptions, Table, Tag, Space, Alert, Typography, Card, Tabs, message, Spin, Button } from 'antd'
+import { CheckCircleOutlined, CloseCircleOutlined, ReloadOutlined } from '@ant-design/icons'
 import { copyTradingApi, apiClient, marketKlineApi } from '@/lib/api-client'
 import ReactECharts from 'echarts-for-react'
 import type { TraderInfo } from '@/components/copy-trading/TraderInfoModal'
@@ -934,7 +934,20 @@ export default function TraderInfoContent({ address }: TraderInfoContentProps) {
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
       {/* 资金概览 */}
       {traderInfo.is_registered && (
-        <Card title="资金概览" size="small">
+        <Card 
+          title="资金概览" 
+          size="small"
+          extra={
+            <Button 
+              icon={<ReloadOutlined />}
+              onClick={fetchTraderInfo}
+              loading={loading}
+              size="small"
+            >
+              刷新
+            </Button>
+          }
+        >
           <Space size="large" style={{ width: '100%', justifyContent: 'space-around' }}>
             <div style={{ textAlign: 'center' }}>
               <div style={{ color: '#999', fontSize: 14, marginBottom: 8 }}>总资产</div>
