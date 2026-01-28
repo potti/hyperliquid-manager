@@ -7,7 +7,7 @@ import { ReloadOutlined, StarOutlined, StarFilled, InfoCircleOutlined, CopyOutli
 const { Text, Title } = Typography
 import { TraderInfo } from '@/components/copy-trading/TraderInfoModal'
 import CollectionModal from '@/components/collection/CollectionModal'
-import { apiClient } from '@/lib/api-client'
+import { apiClient, copyTradingApi } from '@/lib/api-client'
 import { collectionApi } from '@/lib/api-client'
 import { useOpenTraderTab } from '@/utils/tab-utils'
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table'
