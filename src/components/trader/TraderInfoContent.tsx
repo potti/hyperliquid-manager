@@ -143,12 +143,6 @@ export default function TraderInfoContent({ address }: TraderInfoContentProps) {
     }
   }, [address])
 
-  // 组件挂载时获取交易员信息
-  useEffect(() => {
-    fetchTraderInfo()
-    checkFavoriteStatus()
-  }, [fetchTraderInfo, checkFavoriteStatus])
-
   // 检查收藏状态
   const checkFavoriteStatus = useCallback(async () => {
     if (!address) return
@@ -161,6 +155,12 @@ export default function TraderInfoContent({ address }: TraderInfoContentProps) {
       setIsFavorite(false)
     }
   }, [address])
+
+  // 组件挂载时获取交易员信息
+  useEffect(() => {
+    fetchTraderInfo()
+    checkFavoriteStatus()
+  }, [fetchTraderInfo, checkFavoriteStatus])
 
   // 切换收藏状态
   const handleToggleFavorite = useCallback(async () => {
