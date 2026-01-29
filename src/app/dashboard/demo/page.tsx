@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Card, Table, Button, Space, Tag, Modal, Form, Input, message, Alert, Typography } from 'antd'
-import { PlusOutlined, DownloadOutlined, SwapOutlined, UploadOutlined, KeyOutlined, CopyOutlined, DeleteOutlined } from '@ant-design/icons'
+import { PlusOutlined, DownloadOutlined, SwapOutlined, UploadOutlined, KeyOutlined, CopyOutlined, DeleteOutlined, ReloadOutlined } from '@ant-design/icons'
 import { apiClient } from '@/lib/api-client'
 import { copyTradingApi } from '@/lib/api-client'
 import DepositModal from '@/components/wallet/DepositModal'
@@ -963,6 +963,17 @@ export default function DemoPage() {
     return `${sign}${value.toFixed(2)}%`
   }
 
+  // 刷新单个仓位（实际是刷新所有仓位）
+  const handleRefreshPosition = async (position: Position) => {
+    try {
+      const response = await apiClient<PositionsResponse>('/api/v1/trading/positions')
+      setPositionList(response.trader_positions || [])
+      message.success('仓位数据已刷新')
+    } catch (error: any) {
+      message.error(`刷新失败: ${error.message}`)
+    }
+  }
+
   // 仓位列表列配置
   const positionColumns = [
     {
@@ -1077,6 +1088,22 @@ export default function DemoPage() {
         if (!timestamp) return '--'
         return new Date(timestamp * 1000).toLocaleString('zh-CN')
       },
+    },
+    {
+      title: '操作',
+      key: 'action',
+      width: 100,
+      fixed: 'right' as const,
+      render: (_: any, record: Position) => (
+        <Button
+          type="link"
+          size="small"
+          icon={<ReloadOutlined />}
+          onClick={() => handleRefreshPosition(record)}
+        >
+          刷新
+        </Button>
+      ),
     },
   ]
 
@@ -1307,14 +1334,26 @@ export default function DemoPage() {
         </Card>
 
         {/* 第三部分：仓位 */}
-        <Card title="仓位">
+        <Card 
+          title="仓位"
+          extra={
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={fetchPositions}
+              loading={positionLoading}
+              size="small"
+            >
+              刷新全部
+            </Button>
+          }
+        >
           <Table
             columns={positionColumns}
             dataSource={positionList}
             rowKey="id"
             loading={positionLoading}
             pagination={false}
-            scroll={{ x: 2000 }}
+            scroll={{ x: 2100 }}
             locale={{
               emptyText: '暂无仓位数据'
             }}
