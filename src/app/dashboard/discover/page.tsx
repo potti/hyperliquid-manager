@@ -90,45 +90,63 @@ export default function DiscoverPage() {
   const applyFilter = (traders: TraderData[], criteria: FilterCriteria): TraderData[] => {
     return traders.filter(trader => {
       // 夏普比率
-      if (criteria.sharpeRatioMin !== undefined && (trader.sharpe_ratio === undefined || trader.sharpe_ratio < criteria.sharpeRatioMin)) {
-        return false
+      if (criteria.sharpeRatioMin !== undefined) {
+        if (trader.sharpe_ratio === undefined || trader.sharpe_ratio < criteria.sharpeRatioMin) {
+          return false
+        }
       }
-      if (criteria.sharpeRatioMax !== undefined && (trader.sharpe_ratio === undefined || trader.sharpe_ratio > criteria.sharpeRatioMax)) {
-        return false
-      }
-
-      // 最大回撤
-      if (criteria.maxDrawdownMax !== undefined && trader.max_drawdown !== undefined) {
-        const absDrawdown = Math.abs(trader.max_drawdown)
-        if (absDrawdown > criteria.maxDrawdownMax) {
+      if (criteria.sharpeRatioMax !== undefined) {
+        if (trader.sharpe_ratio !== undefined && trader.sharpe_ratio > criteria.sharpeRatioMax) {
           return false
         }
       }
 
-      // 30天交易单数
-      if (criteria.trade30DaysMin !== undefined && (trader.recent_30_days_trade_count === undefined || trader.recent_30_days_trade_count < criteria.trade30DaysMin)) {
-        return false
+      // 最大回撤
+      if (criteria.maxDrawdownMax !== undefined) {
+        if (trader.max_drawdown !== undefined) {
+          const absDrawdown = Math.abs(trader.max_drawdown)
+          if (absDrawdown > criteria.maxDrawdownMax) {
+            return false
+          }
+        }
       }
-      if (criteria.trade30DaysMax !== undefined && (trader.recent_30_days_trade_count === undefined || trader.recent_30_days_trade_count > criteria.trade30DaysMax)) {
-        return false
+
+      // 30天交易单数
+      if (criteria.trade30DaysMin !== undefined) {
+        if (trader.recent_30_days_trade_count === undefined || trader.recent_30_days_trade_count < criteria.trade30DaysMin) {
+          return false
+        }
+      }
+      if (criteria.trade30DaysMax !== undefined) {
+        if (trader.recent_30_days_trade_count !== undefined && trader.recent_30_days_trade_count > criteria.trade30DaysMax) {
+          return false
+        }
       }
 
       // 盈亏比
-      if (criteria.profitLossRatioMin !== undefined && (trader.profit_loss_ratio === undefined || trader.profit_loss_ratio < criteria.profitLossRatioMin)) {
-        return false
+      if (criteria.profitLossRatioMin !== undefined) {
+        if (trader.profit_loss_ratio === undefined || trader.profit_loss_ratio < criteria.profitLossRatioMin) {
+          return false
+        }
       }
 
       // 胜率
-      if (criteria.winRateMin !== undefined && (trader.win_rate === undefined || trader.win_rate < criteria.winRateMin)) {
-        return false
+      if (criteria.winRateMin !== undefined) {
+        if (trader.win_rate === undefined || trader.win_rate < criteria.winRateMin) {
+          return false
+        }
       }
-      if (criteria.winRateMax !== undefined && (trader.win_rate === undefined || trader.win_rate > criteria.winRateMax)) {
-        return false
+      if (criteria.winRateMax !== undefined) {
+        if (trader.win_rate !== undefined && trader.win_rate > criteria.winRateMax) {
+          return false
+        }
       }
 
       // 账户资产
-      if (criteria.totalAssetsMin !== undefined && (trader.total_assets === undefined || trader.total_assets < criteria.totalAssetsMin)) {
-        return false
+      if (criteria.totalAssetsMin !== undefined) {
+        if (trader.total_assets === undefined || trader.total_assets < criteria.totalAssetsMin) {
+          return false
+        }
       }
 
       return true
