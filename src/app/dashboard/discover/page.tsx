@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Card, Table, Button, Space, message, Tooltip, Popover, Typography, Input } from 'antd'
-import { ReloadOutlined, StarOutlined, StarFilled, InfoCircleOutlined, CopyOutlined, SearchOutlined } from '@ant-design/icons'
+import { Card, Table, Button, Space, message, Tooltip, Popover, Typography, Input, Form, InputNumber, Row, Col, Collapse } from 'antd'
+import { ReloadOutlined, StarOutlined, StarFilled, InfoCircleOutlined, CopyOutlined, SearchOutlined, FilterOutlined, ThunderboltOutlined } from '@ant-design/icons'
+
+const { Panel } = Collapse
 
 const { Text, Title } = Typography
 import { TraderInfo } from '@/components/copy-trading/TraderInfoModal'
@@ -45,9 +47,24 @@ interface TraderData {
   }>
 }
 
+// 筛选条件接口
+interface FilterCriteria {
+  sharpeRatioMin?: number
+  sharpeRatioMax?: number
+  maxDrawdownMax?: number
+  trade30DaysMin?: number
+  trade30DaysMax?: number
+  profitLossRatioMin?: number
+  winRateMin?: number
+  winRateMax?: number
+  totalAssetsMin?: number
+}
+
 export default function DiscoverPage() {
+  const [form] = Form.useForm()
   const [loading, setLoading] = useState(false)
   const [traderList, setTraderList] = useState<TraderData[]>([])
+  const [filteredTraderList, setFilteredTraderList] = useState<TraderData[]>([])
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 100,
@@ -66,6 +83,58 @@ export default function DiscoverPage() {
   const [searchAddress, setSearchAddress] = useState<string>('')
   const [searchLoading, setSearchLoading] = useState(false)
 
+  // 筛选相关状态
+  const [filterCriteria, setFilterCriteria] = useState<FilterCriteria>({})
+
+  // 应用筛选条件
+  const applyFilter = (traders: TraderData[], criteria: FilterCriteria): TraderData[] => {
+    return traders.filter(trader => {
+      // 夏普比率
+      if (criteria.sharpeRatioMin !== undefined && (trader.sharpe_ratio === undefined || trader.sharpe_ratio < criteria.sharpeRatioMin)) {
+        return false
+      }
+      if (criteria.sharpeRatioMax !== undefined && (trader.sharpe_ratio === undefined || trader.sharpe_ratio > criteria.sharpeRatioMax)) {
+        return false
+      }
+
+      // 最大回撤
+      if (criteria.maxDrawdownMax !== undefined && trader.max_drawdown !== undefined) {
+        const absDrawdown = Math.abs(trader.max_drawdown)
+        if (absDrawdown > criteria.maxDrawdownMax) {
+          return false
+        }
+      }
+
+      // 30天交易单数
+      if (criteria.trade30DaysMin !== undefined && (trader.recent_30_days_trade_count === undefined || trader.recent_30_days_trade_count < criteria.trade30DaysMin)) {
+        return false
+      }
+      if (criteria.trade30DaysMax !== undefined && (trader.recent_30_days_trade_count === undefined || trader.recent_30_days_trade_count > criteria.trade30DaysMax)) {
+        return false
+      }
+
+      // 盈亏比
+      if (criteria.profitLossRatioMin !== undefined && (trader.profit_loss_ratio === undefined || trader.profit_loss_ratio < criteria.profitLossRatioMin)) {
+        return false
+      }
+
+      // 胜率
+      if (criteria.winRateMin !== undefined && (trader.win_rate === undefined || trader.win_rate < criteria.winRateMin)) {
+        return false
+      }
+      if (criteria.winRateMax !== undefined && (trader.win_rate === undefined || trader.win_rate > criteria.winRateMax)) {
+        return false
+      }
+
+      // 账户资产
+      if (criteria.totalAssetsMin !== undefined && (trader.total_assets === undefined || trader.total_assets < criteria.totalAssetsMin)) {
+        return false
+      }
+
+      return true
+    })
+  }
+
   // 获取交易员列表
   const fetchTraders = async () => {
     setLoading(true)
@@ -73,14 +142,83 @@ export default function DiscoverPage() {
       const response = await apiClient<{ ranking: TraderData[]; total: number }>(
         `/api/v1/rank/win-rate-ranking?limit=0`
       )
-      setTraderList(response.ranking || [])
-      setPagination(prev => ({ ...prev, total: response.total || 0 }))
+      const traders = response.ranking || []
+      setTraderList(traders)
+      // 应用筛选
+      const filtered = applyFilter(traders, filterCriteria)
+      setFilteredTraderList(filtered)
+      setPagination(prev => ({ ...prev, total: filtered.length }))
     } catch (error: any) {
       message.error(`获取交易员列表失败: ${error.message}`)
       setTraderList([])
+      setFilteredTraderList([])
     } finally {
       setLoading(false)
     }
+  }
+
+  // 应用筛选（不重新获取数据）
+  const handleApplyFilter = () => {
+    const values = form.getFieldsValue()
+    const criteria: FilterCriteria = {
+      sharpeRatioMin: values.sharpeRatioMin,
+      sharpeRatioMax: values.sharpeRatioMax,
+      maxDrawdownMax: values.maxDrawdownMax,
+      trade30DaysMin: values.trade30DaysMin,
+      trade30DaysMax: values.trade30DaysMax,
+      profitLossRatioMin: values.profitLossRatioMin,
+      winRateMin: values.winRateMin,
+      winRateMax: values.winRateMax,
+      totalAssetsMin: values.totalAssetsMin,
+    }
+    setFilterCriteria(criteria)
+    const filtered = applyFilter(traderList, criteria)
+    setFilteredTraderList(filtered)
+    setPagination(prev => ({ ...prev, current: 1, total: filtered.length }))
+    message.success(`筛选完成，找到 ${filtered.length} 个交易员`)
+  }
+
+  // 重置筛选
+  const handleResetFilter = () => {
+    form.resetFields()
+    setFilterCriteria({})
+    setFilteredTraderList(traderList)
+    setPagination(prev => ({ ...prev, current: 1, total: traderList.length }))
+    message.info('已重置筛选条件')
+  }
+
+  // 稳健复利型预设
+  const handleSteadyPreset = () => {
+    const preset = {
+      sharpeRatioMin: 1.5,
+      sharpeRatioMax: 3.5,
+      maxDrawdownMax: 20,
+      trade30DaysMin: 20,
+      trade30DaysMax: 90,
+      profitLossRatioMin: 1.3,
+      winRateMin: 55,
+      winRateMax: 75,
+      totalAssetsMin: 5000,
+    }
+    form.setFieldsValue(preset)
+    message.success('已应用稳健复利型预设')
+  }
+
+  // 趋势狙击型预设
+  const handleTrendPreset = () => {
+    const preset = {
+      sharpeRatioMin: 0.8,
+      sharpeRatioMax: 2.0,
+      maxDrawdownMax: 30,
+      trade30DaysMin: 10,
+      trade30DaysMax: 50,
+      profitLossRatioMin: 2.2,
+      winRateMin: 35,
+      winRateMax: 50,
+      totalAssetsMin: 3000,
+    }
+    form.setFieldsValue(preset)
+    message.success('已应用趋势狙击型预设')
   }
 
   // 搜索交易员
@@ -137,6 +275,13 @@ export default function DiscoverPage() {
     fetchTraders()
     fetchCollectedAddresses()
   }, [])
+
+  // 当筛选条件变化时，重新应用筛选
+  useEffect(() => {
+    const filtered = applyFilter(traderList, filterCriteria)
+    setFilteredTraderList(filtered)
+    setPagination(prev => ({ ...prev, current: 1, total: filtered.length }))
+  }, [traderList])
 
   // 处理收藏按钮点击
   const handleCollect = (address: string) => {
@@ -595,9 +740,205 @@ export default function DiscoverPage() {
             </Space>
           }
         >
+          {/* 筛选器 */}
+          <Collapse 
+            style={{ marginBottom: 16 }}
+            items={[
+              {
+                key: '1',
+                label: (
+                  <Space>
+                    <FilterOutlined />
+                    <span>高级筛选</span>
+                    {Object.keys(filterCriteria).length > 0 && (
+                      <span style={{ color: '#1890ff' }}>({Object.keys(filterCriteria).filter(k => filterCriteria[k as keyof FilterCriteria] !== undefined).length} 个条件)</span>
+                    )}
+                  </Space>
+                ),
+                children: (
+                  <Form form={form} layout="vertical">
+                    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                      {/* 预设按钮 */}
+                      <div style={{ marginBottom: 8 }}>
+                        <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                          <Space>
+                            <Button 
+                              type="primary"
+                              icon={<ThunderboltOutlined />}
+                              onClick={handleSteadyPreset}
+                            >
+                              稳健复利型
+                            </Button>
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                              目标：穿越牛熊、控制回撤、资金曲线平滑向上 | 适用资金：60%-80% 跟单仓位
+                            </Text>
+                          </Space>
+                          <Space>
+                            <Button 
+                              type="primary"
+                              danger
+                              icon={<ThunderboltOutlined />}
+                              onClick={handleTrendPreset}
+                            >
+                              趋势狙击型
+                            </Button>
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                              目标：抓取单边大行情，一波行情吃大部分利润 | 适用资金：20%-40% 跟单仓位
+                            </Text>
+                          </Space>
+                        </Space>
+                      </div>
+
+                      <Row gutter={16}>
+                        <Col span={6}>
+                          <Form.Item label="夏普比率 (Sharpe)">
+                            <Space.Compact style={{ width: '100%' }}>
+                              <Form.Item name="sharpeRatioMin" noStyle>
+                                <InputNumber
+                                  placeholder="最小值"
+                                  min={0}
+                                  step={0.1}
+                                  style={{ width: '50%' }}
+                                />
+                              </Form.Item>
+                              <Form.Item name="sharpeRatioMax" noStyle>
+                                <InputNumber
+                                  placeholder="最大值"
+                                  min={0}
+                                  step={0.1}
+                                  style={{ width: '50%' }}
+                                />
+                              </Form.Item>
+                            </Space.Compact>
+                            <Text type="secondary" style={{ fontSize: 11 }}>推荐: 1.5 ~ 3.5</Text>
+                          </Form.Item>
+                        </Col>
+
+                        <Col span={6}>
+                          <Form.Item label="最大回撤 (MDD %)">
+                            <Form.Item name="maxDrawdownMax" noStyle>
+                              <InputNumber
+                                placeholder="< 最大值"
+                                min={0}
+                                max={100}
+                                step={1}
+                                style={{ width: '100%' }}
+                                addonBefore="<"
+                              />
+                            </Form.Item>
+                            <Text type="secondary" style={{ fontSize: 11 }}>推荐: &lt; 20%</Text>
+                          </Form.Item>
+                        </Col>
+
+                        <Col span={6}>
+                          <Form.Item label="30天交易单数">
+                            <Space.Compact style={{ width: '100%' }}>
+                              <Form.Item name="trade30DaysMin" noStyle>
+                                <InputNumber
+                                  placeholder="最小值"
+                                  min={0}
+                                  step={1}
+                                  style={{ width: '50%' }}
+                                />
+                              </Form.Item>
+                              <Form.Item name="trade30DaysMax" noStyle>
+                                <InputNumber
+                                  placeholder="最大值"
+                                  min={0}
+                                  step={1}
+                                  style={{ width: '50%' }}
+                                />
+                              </Form.Item>
+                            </Space.Compact>
+                            <Text type="secondary" style={{ fontSize: 11 }}>推荐: 20 ~ 90 单</Text>
+                          </Form.Item>
+                        </Col>
+
+                        <Col span={6}>
+                          <Form.Item label="盈亏比 (P/L Ratio)">
+                            <Form.Item name="profitLossRatioMin" noStyle>
+                              <InputNumber
+                                placeholder="> 最小值"
+                                min={0}
+                                step={0.1}
+                                style={{ width: '100%' }}
+                                addonBefore=">"
+                              />
+                            </Form.Item>
+                            <Text type="secondary" style={{ fontSize: 11 }}>推荐: &gt; 1.3</Text>
+                          </Form.Item>
+                        </Col>
+                      </Row>
+
+                      <Row gutter={16}>
+                        <Col span={6}>
+                          <Form.Item label="胜率 (Win Rate %)">
+                            <Space.Compact style={{ width: '100%' }}>
+                              <Form.Item name="winRateMin" noStyle>
+                                <InputNumber
+                                  placeholder="最小值"
+                                  min={0}
+                                  max={100}
+                                  step={1}
+                                  style={{ width: '50%' }}
+                                />
+                              </Form.Item>
+                              <Form.Item name="winRateMax" noStyle>
+                                <InputNumber
+                                  placeholder="最大值"
+                                  min={0}
+                                  max={100}
+                                  step={1}
+                                  style={{ width: '50%' }}
+                                />
+                              </Form.Item>
+                            </Space.Compact>
+                            <Text type="secondary" style={{ fontSize: 11 }}>推荐: 55% ~ 75%</Text>
+                          </Form.Item>
+                        </Col>
+
+                        <Col span={6}>
+                          <Form.Item label="账户资产 ($)">
+                            <Form.Item name="totalAssetsMin" noStyle>
+                              <InputNumber
+                                placeholder="> 最小值"
+                                min={0}
+                                step={1000}
+                                style={{ width: '100%' }}
+                                addonBefore=">"
+                              />
+                            </Form.Item>
+                            <Text type="secondary" style={{ fontSize: 11 }}>推荐: &gt; $5,000</Text>
+                          </Form.Item>
+                        </Col>
+
+                        <Col span={12}>
+                          <Form.Item label=" " colon={false}>
+                            <Space>
+                              <Button 
+                                type="primary"
+                                icon={<FilterOutlined />}
+                                onClick={handleApplyFilter}
+                              >
+                                应用筛选
+                              </Button>
+                              <Button onClick={handleResetFilter}>
+                                重置
+                              </Button>
+                            </Space>
+                          </Form.Item>
+                        </Col>
+                      </Row>
+                    </Space>
+                  </Form>
+                ),
+              },
+            ]}
+          />
+
           <Table
             columns={columns}
-            dataSource={traderList}
+            dataSource={filteredTraderList}
             rowKey="address"
             loading={loading}
             pagination={{
