@@ -867,7 +867,7 @@ export default function TraderSubscribeModal({
                       <Option value="BTC">BTC</Option>
                       <Option value="ETH">ETH</Option>
                       <Option value="SOL">SOL</Option>
-                      <Option value="USDC">USDC</Option>
+                      <Option value="HYPE">HYPE</Option>
                     </Select>
                   </Form.Item>
                 </Col>
