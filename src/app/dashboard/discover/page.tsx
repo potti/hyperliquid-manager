@@ -175,22 +175,30 @@ export default function DiscoverPage() {
     }
   }
 
+  // 仅当值为有效数字时才加入筛选条件（避免空 InputNumber 返回 null 导致错误筛选）
+  const toValidNum = (v: unknown): number | undefined =>
+    typeof v === 'number' && !isNaN(v) ? v : undefined
+
   // 应用筛选（不重新获取数据）
   const handleApplyFilter = () => {
     const values = form.getFieldsValue()
     const criteria: FilterCriteria = {
-      sharpeRatioMin: values.sharpeRatioMin,
-      sharpeRatioMax: values.sharpeRatioMax,
-      maxDrawdownMax: values.maxDrawdownMax,
-      trade30DaysMin: values.trade30DaysMin,
-      trade30DaysMax: values.trade30DaysMax,
-      profitLossRatioMin: values.profitLossRatioMin,
-      winRateMin: values.winRateMin,
-      winRateMax: values.winRateMax,
-      totalAssetsMin: values.totalAssetsMin,
+      sharpeRatioMin: toValidNum(values.sharpeRatioMin),
+      sharpeRatioMax: toValidNum(values.sharpeRatioMax),
+      maxDrawdownMax: toValidNum(values.maxDrawdownMax),
+      trade30DaysMin: toValidNum(values.trade30DaysMin),
+      trade30DaysMax: toValidNum(values.trade30DaysMax),
+      profitLossRatioMin: toValidNum(values.profitLossRatioMin),
+      winRateMin: toValidNum(values.winRateMin),
+      winRateMax: toValidNum(values.winRateMax),
+      totalAssetsMin: toValidNum(values.totalAssetsMin),
     }
-    setFilterCriteria(criteria)
-    const filtered = applyFilter(traderList, criteria)
+    // 移除 undefined 的键，保持 filterCriteria 简洁
+    const cleanCriteria = Object.fromEntries(
+      Object.entries(criteria).filter(([, v]) => v !== undefined)
+    ) as FilterCriteria
+    setFilterCriteria(cleanCriteria)
+    const filtered = applyFilter(traderList, cleanCriteria)
     setFilteredTraderList(filtered)
     setPagination(prev => ({ ...prev, current: 1, total: filtered.length }))
     message.success(`筛选完成，找到 ${filtered.length} 个交易员`)
