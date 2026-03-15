@@ -15,6 +15,7 @@ const DashboardPage = dynamic(() => import('@/app/dashboard/page'), { ssr: false
 const DemoPage = dynamic(() => import('@/app/dashboard/demo/page'), { ssr: false })
 const DiscoverPage = dynamic(() => import('@/app/dashboard/discover/page'), { ssr: false })
 const CollectionsPage = dynamic(() => import('@/app/dashboard/collections/page'), { ssr: false })
+const FundingRatesPage = dynamic(() => import('@/app/dashboard/funding-rates/page'), { ssr: false })
 const TagsPage = dynamic(() => import('@/app/dashboard/management/tags/page'), { ssr: false })
 
 // Tab 配置映射
@@ -49,6 +50,14 @@ export const tabConfigMap: Record<string, TabConfig> = {
     component: CollectionsPage,
     closable: true,
     singleton: true, // 单模态：只能打开一个收藏地址页面
+    icon: <RocketOutlined />,
+  },
+  '/dashboard/funding-rates': {
+    key: '/dashboard/funding-rates',
+    label: '资金费率',
+    component: FundingRatesPage,
+    closable: true,
+    singleton: true,
     icon: <RocketOutlined />,
   },
   '/dashboard/management/tags': {

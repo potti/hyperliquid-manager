@@ -108,6 +108,11 @@ export default function DashboardLayout({ children }: { children?: React.ReactNo
           label: '收藏地址',
           onClick: () => handleMenuClick('/dashboard/collections'),
         },
+        {
+          key: '/dashboard/funding-rates',
+          label: '资金费率',
+          onClick: () => handleMenuClick('/dashboard/funding-rates'),
+        },
       ],
     },
     {

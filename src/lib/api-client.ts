@@ -305,3 +305,26 @@ export const marketKlineApi = {
       created_at: number
     }>; total: number }>('/api/v1/market/klines', params),
 }
+
+/** 资金费率单条记录 */
+export interface FundingRateItem {
+  symbol: string
+  source: string
+  funding_rate: number
+  funding_rate_pct: number
+  funding_time: number
+  created_at: number
+}
+
+/**
+ * 资金费率相关 API
+ */
+export const fundingRateApi = {
+  // 获取最近 24 小时资金费率
+  getLast24h: () =>
+    get<{
+      list: FundingRateItem[]
+      by_source: Record<string, FundingRateItem[]>
+      total: number
+    }>('/api/v1/market/funding-rates'),
+}
