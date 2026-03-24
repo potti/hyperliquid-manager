@@ -1,0 +1,14 @@
+
+> hyperliquid-manager@0.1.0 start
+> next start
+
+  ▲ Next.js 14.2.18
+  - Local:        http://localhost:3000
+
+ ✓ Starting...
+=== Next.js Build Environment ===
+NEXT_PUBLIC_GOOGLE_CLIENT_ID: (not set)
+NEXT_PUBLIC_API_URL: https://hyperstar.dpdns.org
+=================================
+ ⚠ "next start" does not work with "output: standalone" configuration. Use "node .next/standalone/server.js" instead.
+ ✓ Ready in 662ms
