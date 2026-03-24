@@ -16,6 +16,7 @@ const DemoPage = dynamic(() => import('@/app/dashboard/demo/page'), { ssr: false
 const DiscoverPage = dynamic(() => import('@/app/dashboard/discover/page'), { ssr: false })
 const CollectionsPage = dynamic(() => import('@/app/dashboard/collections/page'), { ssr: false })
 const FundingRatesPage = dynamic(() => import('@/app/dashboard/funding-rates/page'), { ssr: false })
+const MarketDailyMetricsPage = dynamic(() => import('@/app/dashboard/market-daily-metrics/page'), { ssr: false })
 const TagsPage = dynamic(() => import('@/app/dashboard/management/tags/page'), { ssr: false })
 
 // Tab 配置映射
@@ -56,6 +57,14 @@ export const tabConfigMap: Record<string, TabConfig> = {
     key: '/dashboard/funding-rates',
     label: '资金费率',
     component: FundingRatesPage,
+    closable: true,
+    singleton: true,
+    icon: <RocketOutlined />,
+  },
+  '/dashboard/market-daily-metrics': {
+    key: '/dashboard/market-daily-metrics',
+    label: '市场日度指标',
+    component: MarketDailyMetricsPage,
     closable: true,
     singleton: true,
     icon: <RocketOutlined />,

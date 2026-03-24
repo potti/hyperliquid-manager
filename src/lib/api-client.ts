@@ -328,3 +328,29 @@ export const fundingRateApi = {
       total: number
     }>('/api/v1/market/funding-rates'),
 }
+
+/** 市场日度指标项（保留扩展字段以兼容后端演进） */
+export interface MarketDailyMetricItem {
+  date?: string
+  day?: string
+  timestamp?: number
+  source?: string
+  symbol?: string
+  value?: number
+  [key: string]: any
+}
+
+/** 市场日度指标响应 */
+export interface MarketDailyMetricsResponse {
+  funding_rates?: MarketDailyMetricItem[]
+  exchange_netflow?: MarketDailyMetricItem[]
+  stablecoin_reserves?: MarketDailyMetricItem[]
+  [key: string]: any
+}
+
+/**
+ * 市场日度指标 API
+ */
+export const marketDailyMetricsApi = {
+  getDailyMetrics: () => get<MarketDailyMetricsResponse>('/api/v1/market/daily-metrics'),
+}
