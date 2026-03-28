@@ -113,6 +113,11 @@ export default function DashboardLayout({ children }: { children?: React.ReactNo
           label: '资金费率',
           onClick: () => handleMenuClick('/dashboard/funding-rates'),
         },
+        {
+          key: '/dashboard/market-daily-metrics',
+          label: '市场日度指标',
+          onClick: () => handleMenuClick('/dashboard/market-daily-metrics'),
+        },
       ],
     },
     {

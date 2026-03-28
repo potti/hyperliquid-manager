@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Descriptions, Table, Tag, Space, Alert, Typography, Card, Tabs, message, Spin, Button } from 'antd'
-import { CheckCircleOutlined, CloseCircleOutlined, ReloadOutlined, StarOutlined, StarFilled } from '@ant-design/icons'
+import { CheckCircleOutlined, CloseCircleOutlined, ReloadOutlined, StarOutlined, StarFilled, CopyOutlined } from '@ant-design/icons'
 import { copyTradingApi, apiClient, marketKlineApi, collectionApi } from '@/lib/api-client'
 import ReactECharts from 'echarts-for-react'
 import type { TraderInfo } from '@/components/copy-trading/TraderInfoModal'
@@ -185,6 +185,29 @@ export default function TraderInfoContent({ address }: TraderInfoContentProps) {
       setFavoriteLoading(false)
     }
   }, [address, isFavorite, favoriteLoading])
+
+  const handleCopyAddress = useCallback(async () => {
+    if (!address) return
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(address)
+      } else {
+        const textarea = document.createElement('textarea')
+        textarea.value = address
+        textarea.style.position = 'fixed'
+        textarea.style.left = '-9999px'
+        textarea.style.top = '-9999px'
+        document.body.appendChild(textarea)
+        textarea.focus()
+        textarea.select()
+        document.execCommand('copy')
+        document.body.removeChild(textarea)
+      }
+      message.success('地址已复制')
+    } catch (error: any) {
+      message.error(`复制失败: ${error?.message || '未知错误'}`)
+    }
+  }, [address])
 
   // 刷新交易员数据（包括历史数据）
   const handleRefresh = useCallback(async () => {
@@ -1007,6 +1030,13 @@ export default function TraderInfoContent({ address }: TraderInfoContentProps) {
                 type={isFavorite ? 'primary' : 'default'}
               >
                 {isFavorite ? '已收藏' : '收藏'}
+              </Button>
+              <Button
+                icon={<CopyOutlined />}
+                onClick={handleCopyAddress}
+                size="small"
+              >
+                复制地址
               </Button>
               <Button 
                 icon={<ReloadOutlined />}
