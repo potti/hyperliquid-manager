@@ -9,6 +9,7 @@ import DepositModal from '@/components/wallet/DepositModal'
 import AddTraderModal from '@/components/copy-trading/AddTraderModal'
 import TraderSubscribeModal, { TraderInfo, SubscribeFormValues } from '@/components/copy-trading/TraderSubscribeModal'
 import { useOpenTraderTab } from '@/utils/tab-utils'
+import { normalizeWalletsHyperliquid, toFiniteNumber } from '@/utils/wallet-hyperliquid'
 
 const { Paragraph, Text } = Typography
 
@@ -21,12 +22,18 @@ interface Wallet {
   status: string
   created_at: number
   updated_at: number
+  /** API 返回在根字段；见 normalizeWalletsHyperliquid */
+  account_value?: string | number
+  unrealized_pnl?: string | number
+  margin_used?: string | number
+  withdrawable?: string | number
+  is_registered?: boolean
   hyperliquid?: {
-    account_value: string      // 总资产
-    unrealized_pnl: string     // 未实现盈亏
-    margin_used: string        // 保证金
-    withdrawable: string       // 可提现
-    is_registered: boolean     // 是否已注册
+    account_value: string | number
+    unrealized_pnl: string | number
+    margin_used: string | number
+    withdrawable: string | number
+    is_registered: boolean
   }
 }
 
@@ -58,10 +65,10 @@ interface CopyTradeSubscription {
   updated_at: number
   trader_info?: {
     address: string
-    account_value: string
-    unrealized_pnl: string
-    margin_used: string
-    withdrawable: string
+    account_value: string | number
+    unrealized_pnl: string | number
+    margin_used: string | number
+    withdrawable: string | number
     is_registered: boolean
     position_summary: {
       total_position_value: string
@@ -147,7 +154,7 @@ export default function DemoPage() {
     setWalletsLoading(true)
     try {
       const response = await apiClient<{ wallets: Wallet[] }>('/api/v1/wallet/list')
-      setWallets(response.wallets || [])
+      setWallets(normalizeWalletsHyperliquid(response.wallets || []))
     } catch (error: any) {
       message.error(`获取钱包列表失败: ${error.message}`)
     } finally {
@@ -370,14 +377,17 @@ export default function DemoPage() {
     return configs[status] || { color: 'default', text: status }
   }
 
-  // 格式化金额显示
-  const formatUSD = (value: string | undefined) => {
-    if (!value || value === '0' || value === '0.00') {
+  // 格式化金额显示（后端可能返回 string 或 number）
+  const formatUSD = (value: string | number | undefined | null) => {
+    if (value === undefined || value === null || value === '') {
       return <span style={{ color: '#999' }}>$0.00</span>
     }
-    const num = parseFloat(value)
-    if (isNaN(num)) {
+    const num = typeof value === 'number' ? value : parseFloat(String(value).trim())
+    if (!Number.isFinite(num)) {
       return <span style={{ color: '#999' }}>--</span>
+    }
+    if (num === 0) {
+      return <span style={{ color: '#999' }}>$0.00</span>
     }
     const formatted = new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -668,12 +678,15 @@ export default function DemoPage() {
       width: 140,
       render: (_: unknown, record: Wallet) => {
         const value = record.hyperliquid?.unrealized_pnl
-        if (!value || value === '0' || value === '0.00') {
+        if (value === undefined || value === null || value === '') {
           return <span style={{ color: '#999' }}>$0.00</span>
         }
-        const num = parseFloat(value)
-        if (isNaN(num)) {
+        const num = typeof value === 'number' ? value : parseFloat(String(value).trim())
+        if (!Number.isFinite(num)) {
           return <span style={{ color: '#999' }}>--</span>
+        }
+        if (num === 0) {
+          return <span style={{ color: '#999' }}>$0.00</span>
         }
         const formatted = new Intl.NumberFormat('en-US', {
           style: 'currency',
@@ -763,8 +776,8 @@ export default function DemoPage() {
   // 计算保证金使用率
   const calculateMarginUsage = (subscription: CopyTradeSubscription): string => {
     if (!subscription.trader_info) return '--'
-    const accountValue = parseFloat(subscription.trader_info.account_value || '0')
-    const marginUsed = parseFloat(subscription.trader_info.margin_used || '0')
+    const accountValue = toFiniteNumber(subscription.trader_info.account_value)
+    const marginUsed = toFiniteNumber(subscription.trader_info.margin_used)
     if (accountValue === 0) return '0%'
     const usage = (marginUsed / accountValue) * 100
     return `${usage.toFixed(2)}%`
@@ -859,10 +872,16 @@ export default function DemoPage() {
           return <span style={{ color: '#999' }}>--</span>
         }
         const pnl = record.trader_info.unrealized_pnl
-        if (!pnl || pnl === '0' || pnl === '0.00') {
+        if (pnl === undefined || pnl === null || pnl === '') {
           return <span style={{ color: '#999' }}>$0.00</span>
         }
-        const num = parseFloat(pnl)
+        const num = typeof pnl === 'number' ? pnl : parseFloat(String(pnl).trim())
+        if (!Number.isFinite(num)) {
+          return <span style={{ color: '#999' }}>--</span>
+        }
+        if (num === 0) {
+          return <span style={{ color: '#999' }}>$0.00</span>
+        }
         const formatted = new Intl.NumberFormat('en-US', {
           style: 'currency',
           currency: 'USD',
@@ -1116,10 +1135,10 @@ export default function DemoPage() {
 
     wallets.forEach(wallet => {
       if (wallet.hyperliquid?.is_registered) {
-        totalAssets += parseFloat(wallet.hyperliquid.account_value || '0')
-        totalPnl += parseFloat(wallet.hyperliquid.unrealized_pnl || '0')
-        totalMargin += parseFloat(wallet.hyperliquid.margin_used || '0')
-        totalWithdrawable += parseFloat(wallet.hyperliquid.withdrawable || '0')
+        totalAssets += toFiniteNumber(wallet.hyperliquid.account_value)
+        totalPnl += toFiniteNumber(wallet.hyperliquid.unrealized_pnl)
+        totalMargin += toFiniteNumber(wallet.hyperliquid.margin_used)
+        totalWithdrawable += toFiniteNumber(wallet.hyperliquid.withdrawable)
       }
     })
 

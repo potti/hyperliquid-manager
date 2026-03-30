@@ -18,6 +18,7 @@ import {
 } from 'antd'
 import { InfoCircleOutlined } from '@ant-design/icons'
 import { TraderInfo } from './TraderInfoModal'
+import { toFiniteNumber } from '@/utils/wallet-hyperliquid'
 
 const { Text } = Typography
 const { Option } = Select
@@ -417,7 +418,7 @@ export default function SubscribeModal({
         {traderInfo && (
           <Alert
             message={`将跟单交易员：${traderInfo.address.slice(0, 6)}...${traderInfo.address.slice(-4)}`}
-            description={`总资产: $${parseFloat(traderInfo.account_value || '0').toFixed(2)} | 未实现盈亏: $${parseFloat(traderInfo.unrealized_pnl || '0').toFixed(2)}`}
+            description={`总资产: $${toFiniteNumber(traderInfo.account_value).toFixed(2)} | 未实现盈亏: $${toFiniteNumber(traderInfo.unrealized_pnl).toFixed(2)}`}
             type="info"
             showIcon
             style={{ marginTop: 16 }}

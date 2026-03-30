@@ -623,14 +623,17 @@ export default function TraderInfoContent({ address }: TraderInfoContentProps) {
     }
   }
 
-  // 格式化美元金额
-  const formatUSD = (value: string | undefined) => {
-    if (!value || value === '0' || value === '0.00') {
+  // 格式化美元金额（后端可能返回 string 或 number）
+  const formatUSD = (value: string | number | undefined | null) => {
+    if (value === undefined || value === null || value === '') {
       return <span style={{ color: '#999' }}>$0.00</span>
     }
-    const num = parseFloat(value)
-    if (isNaN(num)) {
+    const num = typeof value === 'number' ? value : parseFloat(String(value).trim())
+    if (!Number.isFinite(num)) {
       return <span style={{ color: '#999' }}>--</span>
+    }
+    if (num === 0) {
+      return <span style={{ color: '#999' }}>$0.00</span>
     }
     const formatted = new Intl.NumberFormat('en-US', {
       style: 'currency',

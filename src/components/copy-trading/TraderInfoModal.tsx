@@ -55,10 +55,10 @@ export interface EquityPoint {
 // 交易员信息类型
 export interface TraderInfo {
   address: string
-  account_value: string
-  unrealized_pnl: string
-  margin_used: string
-  withdrawable: string
+  account_value: string | number
+  unrealized_pnl: string | number
+  margin_used: string | number
+  withdrawable: string | number
   is_registered: boolean
   position_summary: PositionSummary
   positions?: TraderPosition[]
@@ -337,14 +337,17 @@ export default function TraderInfoModal({
     }
   }
 
-  // 格式化美元金额
-  const formatUSD = (value: string | undefined) => {
-    if (!value || value === '0' || value === '0.00') {
+  // 格式化美元金额（后端可能返回 string 或 number）
+  const formatUSD = (value: string | number | undefined | null) => {
+    if (value === undefined || value === null || value === '') {
       return <span style={{ color: '#999' }}>$0.00</span>
     }
-    const num = parseFloat(value)
-    if (isNaN(num)) {
+    const num = typeof value === 'number' ? value : parseFloat(String(value).trim())
+    if (!Number.isFinite(num)) {
       return <span style={{ color: '#999' }}>--</span>
+    }
+    if (num === 0) {
+      return <span style={{ color: '#999' }}>$0.00</span>
     }
     const formatted = new Intl.NumberFormat('en-US', {
       style: 'currency',
