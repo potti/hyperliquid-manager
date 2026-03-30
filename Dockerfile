@@ -34,7 +34,7 @@ RUN npm run build
 FROM base AS runner
 WORKDIR /app
 
-ENV NODE_ENV production
+ENV NODE_ENV=production
 
 # Pass build args to runtime for display (Note: NEXT_PUBLIC_* are baked into JS at build time)
 ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID
@@ -76,7 +76,7 @@ USER nextjs
 
 EXPOSE 3000
 
-ENV PORT 3000
+ENV PORT=3000
 
 CMD ["/app/start.sh"]
 
