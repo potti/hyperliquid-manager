@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Descriptions, Table, Tag, Space, Alert, Typography, Card, Tabs, message, Spin, Button } from 'antd'
 import { CheckCircleOutlined, CloseCircleOutlined, ReloadOutlined, StarOutlined, StarFilled, CopyOutlined } from '@ant-design/icons'
 import { copyTradingApi, apiClient, marketKlineApi, collectionApi } from '@/lib/api-client'
+import { isLongPositionSide } from '@/lib/position-side'
 import ReactECharts from 'echarts-for-react'
 import type { TraderInfo } from '@/components/copy-trading/TraderInfoModal'
 
@@ -370,8 +371,8 @@ export default function TraderInfoContent({ address }: TraderInfoContentProps) {
         
         // 如果时间差在合理范围内（比如7天内），添加标记
         if (minDiff < 7 * 24 * 60 * 60 * 1000) {
-          const side = position.side === 'Long' ? '做多' : '做空'
-          const markerColor = position.side === 'Long' ? '#52c41a' : '#ff4d4f'
+          const side = isLongPositionSide(position.side) ? '做多' : '做空'
+          const markerColor = isLongPositionSide(position.side) ? '#52c41a' : '#ff4d4f'
           buyMarkLines.push({
             name: `${side}开仓`,
             xAxis: closestIndex, // 在对应的时间点画垂直线
