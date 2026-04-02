@@ -33,6 +33,9 @@ export interface PMPEConfigPatch {
   enabled?: boolean
   arb_enabled?: boolean
   copy_enabled?: boolean
+  smart_money?: Partial<SmartMoneyConfigDTO>
+  arb?: Partial<ArbConfigDTO>
+  info_edge?: Partial<InfoEdgeConfigDTO>
 }
 
 // ---------- Markets ----------
