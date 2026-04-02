@@ -20,3 +20,18 @@ a {
   text-decoration: none;
 }
 
+@keyframes pmpe-arb-flash {
+  0%,
+  100% {
+    background-color: #f6ffed;
+  }
+  50% {
+    background-color: #b7eb8f;
+  }
+}
+
+.pmpe-arb-flash-row td {
+  animation: pmpe-arb-flash 1s ease-in-out 3;
+  background-color: #f6ffed !important;
+}
+

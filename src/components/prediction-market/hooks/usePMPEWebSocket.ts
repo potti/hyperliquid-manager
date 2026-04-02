@@ -85,13 +85,13 @@ export function usePMPEWebSocket(enabled = true): UsePMPEWebSocketResult {
     const copyIv = setInterval(() => {
       setLastCopyTrade({
         channel: 'pmpe:copy-trade',
-        wallet: '0x' + '0'.repeat(40),
-        market_id: 'm1',
-        side: 'YES',
-        amount: 100,
+        wallet: '0x' + Math.floor(Math.random() * 1e16).toString(16).padStart(40, '0'),
+        market_id: `m_${Math.floor(Math.random() * 1e6)}`,
+        side: Math.random() > 0.5 ? 'YES' : 'NO',
+        amount: Math.round(Math.random() * 5000) / 10,
         ts: Date.now(),
       })
-    }, 90_000)
+    }, 22_000)
 
     return () => {
       clearTimeout(t0)
