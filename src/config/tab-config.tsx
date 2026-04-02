@@ -6,6 +6,7 @@ import {
   RocketOutlined,
   AppstoreOutlined,
   TagsOutlined,
+  LineChartOutlined,
 } from '@ant-design/icons'
 
 // 动态导入页面组件（避免在初始加载时加载所有页面，实现代码分割）
@@ -18,6 +19,35 @@ const CollectionsPage = dynamic(() => import('@/app/dashboard/collections/page')
 const FundingRatesPage = dynamic(() => import('@/app/dashboard/funding-rates/page'), { ssr: false })
 const MarketDailyMetricsPage = dynamic(() => import('@/app/dashboard/market-daily-metrics/page'), { ssr: false })
 const TagsPage = dynamic(() => import('@/app/dashboard/management/tags/page'), { ssr: false })
+
+const PolyProfitDashboard = dynamic(
+  () => import('@/components/prediction-market/PolyProfitDashboard'),
+  { ssr: false }
+)
+const PolyProfitSmartMoney = dynamic(
+  () => import('@/app/prediction-market/smartmoney/page'),
+  { ssr: false }
+)
+const PolyProfitArbitrage = dynamic(
+  () => import('@/app/prediction-market/arbitrage/page'),
+  { ssr: false }
+)
+const PolyProfitMarkets = dynamic(
+  () => import('@/app/prediction-market/markets/page'),
+  { ssr: false }
+)
+const PolyProfitTrades = dynamic(
+  () => import('@/app/prediction-market/trades/page'),
+  { ssr: false }
+)
+const PolyProfitSettings = dynamic(
+  () => import('@/app/prediction-market/settings/page'),
+  { ssr: false }
+)
+const PolyProfitMonitoring = dynamic(
+  () => import('@/app/prediction-market/monitoring/page'),
+  { ssr: false }
+)
 
 // Tab 配置映射
 export const tabConfigMap: Record<string, TabConfig> = {
@@ -76,6 +106,62 @@ export const tabConfigMap: Record<string, TabConfig> = {
     closable: true,
     singleton: true, // 单模态：只能打开一个标签管理页面
     icon: <TagsOutlined />,
+  },
+  '/prediction-market/dashboard': {
+    key: '/prediction-market/dashboard',
+    label: '概览仪表盘',
+    component: PolyProfitDashboard,
+    closable: true,
+    singleton: true,
+    icon: <LineChartOutlined />,
+  },
+  '/prediction-market/smartmoney': {
+    key: '/prediction-market/smartmoney',
+    label: '聪明钱跟单',
+    component: PolyProfitSmartMoney,
+    closable: true,
+    singleton: true,
+    icon: <LineChartOutlined />,
+  },
+  '/prediction-market/arbitrage': {
+    key: '/prediction-market/arbitrage',
+    label: '套利机会扫描',
+    component: PolyProfitArbitrage,
+    closable: true,
+    singleton: true,
+    icon: <LineChartOutlined />,
+  },
+  '/prediction-market/markets': {
+    key: '/prediction-market/markets',
+    label: '市场数据列表',
+    component: PolyProfitMarkets,
+    closable: true,
+    singleton: true,
+    icon: <LineChartOutlined />,
+  },
+  '/prediction-market/trades': {
+    key: '/prediction-market/trades',
+    label: '交易历史记录',
+    component: PolyProfitTrades,
+    closable: true,
+    singleton: true,
+    icon: <LineChartOutlined />,
+  },
+  '/prediction-market/settings': {
+    key: '/prediction-market/settings',
+    label: '配置与策略',
+    component: PolyProfitSettings,
+    closable: true,
+    singleton: true,
+    icon: <LineChartOutlined />,
+  },
+  '/prediction-market/monitoring': {
+    key: '/prediction-market/monitoring',
+    label: '监控告警',
+    component: PolyProfitMonitoring,
+    closable: true,
+    singleton: true,
+    icon: <LineChartOutlined />,
   },
 }
 
