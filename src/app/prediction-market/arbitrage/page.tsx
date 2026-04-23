@@ -247,7 +247,7 @@ export default function ArbitragePage() {
   return (
     <div>
       <Typography.Title level={4} style={{ marginTop: 0 }}>
-        PolyProfit - 套利机会扫描
+        跨平台套利机会（Polymarket vs Predict.fun）
       </Typography.Title>
       <Typography.Text type="secondary">
         实时通道：{connected ? '已连接(模拟)' : '连接中…'}

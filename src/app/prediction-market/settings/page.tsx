@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   Form,
   InputNumber,
+  Input,
   Switch,
   Button,
   Card,
@@ -67,6 +68,9 @@ export default function SettingsPage() {
         enabled: values.enabled,
         arb_enabled: values.arb_enabled,
         copy_enabled: values.copy_enabled,
+        predict_enabled: values.predict_enabled,
+        predict_api_key: values.predict_api_key,
+        predict_spread_threshold_pct: values.predict_spread_threshold,
         smart_money: {
           copy_multiplier: values.copy_multiplier,
           min_position_usd: values.max_position,
@@ -152,6 +156,29 @@ export default function SettingsPage() {
           </Form.Item>
         </Card>
 
+        <Card title="Predict.fun 配置" style={{ marginBottom: 16 }}>
+          <Form.Item name="predict_enabled" label="启用 Predict.fun" valuePropName="checked">
+            <Switch />
+          </Form.Item>
+          <Form.Item name="predict_api_key" label="API Key" style={{ marginBottom: 12 }}>
+            <Input.Password placeholder="输入 Predict.fun API Key" />
+          </Form.Item>
+          <Form.Item name="predict_spread_threshold" label="Predict.fun Spread 阈值（%）">
+            <Slider
+              min={0.5}
+              max={10}
+              step={0.1}
+              marks={{
+                0.5: '0.5%',
+                2: '2%',
+                5: '5%',
+                10: '10%',
+              }}
+              tooltip={{ formatter: (v) => `${(v ?? 0).toFixed(1)}%` }}
+            />
+          </Form.Item>
+        </Card>
+
         <Card title="信息差配置" style={{ marginBottom: 16 }}>
           <Form.Item
             name="info_edge_enabled"
@@ -227,6 +254,9 @@ function mapConfigToForm(cfg: PMPEConfig) {
     enabled: cfg.enabled,
     arb_enabled: cfg.arb_enabled,
     copy_enabled: cfg.copy_enabled,
+    predict_enabled: !!cfg.predict?.api_key,
+    predict_api_key: cfg.predict?.api_key ?? '',
+    predict_spread_threshold: 2.0,
     copy_multiplier: cfg.smart_money?.copy_multiplier ?? 1.0,
     max_position: cfg.smart_money?.min_position_usd ?? 5000,
     min_spread: cfg.arb?.min_spread_pct ?? 0.03,

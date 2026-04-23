@@ -34,6 +34,9 @@ export interface PMPEConfigPatch {
   enabled?: boolean
   arb_enabled?: boolean
   copy_enabled?: boolean
+  predict_enabled?: boolean
+  predict_api_key?: string
+  predict_spread_threshold_pct?: number
   smart_money?: Partial<SmartMoneyConfigDTO>
   arb?: Partial<ArbConfigDTO>
   info_edge?: Partial<InfoEdgeConfigDTO>

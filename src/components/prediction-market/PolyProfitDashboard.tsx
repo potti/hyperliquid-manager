@@ -179,6 +179,18 @@ export default function PolyProfitDashboard() {
             loading={loading}
           />
         </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <div style={{ background: '#fff', padding: 16, borderRadius: 8, border: '1px solid #d9d9d9' }}>
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>Predict.fun 状态</Typography.Text>
+            <div style={{ marginTop: 4 }}>
+              <Typography.Text strong style={{ color: '#52c41a', fontSize: 15 }}>已上线</Typography.Text>
+            </div>
+            <div style={{ marginTop: 4 }}>
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>30d Volume</Typography.Text>
+            </div>
+            <Typography.Title level={4} style={{ margin: '2px 0 0', color: '#1890ff' }}>~$760M</Typography.Title>
+          </div>
+        </Col>
       </Row>
 
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>

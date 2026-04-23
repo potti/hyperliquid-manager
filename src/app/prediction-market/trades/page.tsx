@@ -165,7 +165,13 @@ export default function TradesPage() {
     {
       title: '策略',
       key: 'strategy',
-      render: () => <Tag color="blue">套利</Tag>,
+      render: (_, r) => {
+        const hasPoly = r.legs?.leg_a?.venue === 'polymarket' || r.legs?.leg_b?.venue === 'polymarket'
+        const hasPredict = r.legs?.leg_a?.venue === 'predict' || r.legs?.leg_b?.venue === 'predict'
+        if (hasPoly && hasPredict) return <Tag color="purple">poly_predict_arb</Tag>
+        if (hasPoly) return <Tag color="blue">poly_arb</Tag>
+        return <Tag color="blue">套利</Tag>
+      },
     },
     {
       title: '方向',
@@ -221,8 +227,12 @@ export default function TradesPage() {
     {
       title: 'TxHash',
       key: 'tx',
-      width: 100,
-      render: () => <span style={{ color: '#999' }}>—</span>,
+      width: 140,
+      render: (_, r) => {
+        const txHash = (r as any).tx_hash
+        if (!txHash) return <span style={{ color: '#999' }}>—</span>
+        return <a href={`https://bscscan.com/tx/${txHash}`} target="_blank" rel="noopener noreferrer">{txHash.slice(0, 8)}…{txHash.slice(-4)}</a>
+      },
     },
     {
       title: '创建时间',

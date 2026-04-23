@@ -134,13 +134,31 @@ export default function MarketsPage() {
       render: (_, r) => r.quotes?.kalshi_no?.toFixed(4) ?? '—',
     },
     {
+      title: 'Predict YES',
+      key: 'predict_yes',
+      render: (_, r) => r.quotes?.predict_yes?.toFixed(4) ?? '—',
+    },
+    {
+      title: 'Predict NO',
+      key: 'predict_no',
+      render: (_, r) => r.quotes?.predict_no?.toFixed(4) ?? '—',
+    },
+    {
+      title: 'Predict Market ID',
+      key: 'predict_market_id',
+      width: 160,
+      ellipsis: true,
+      render: (_, r) => r.mapping?.predict?.market_id ?? '—',
+    },
+    {
       title: '流动性',
       key: 'liquidity',
       render: (_, r) => {
         const p = r.liquidity?.poly
         const k = r.liquidity?.kalshi
-        if (p == null && k == null) return '—'
-        return `P:${(p ?? 0).toFixed(0)} / K:${(k ?? 0).toFixed(0)}`
+        const pr = r.liquidity?.predict
+        if (p == null && k == null && pr == null) return '—'
+        return `P:${(p ?? 0).toFixed(0)} / K:${(k ?? 0).toFixed(0)} / Pred:${(pr ?? 0).toFixed(0)}`
       },
     },
     {
