@@ -122,6 +122,7 @@ export interface ArbOpportunity {
   status: string
   created_at: number
   updated_at: number
+  tx_hash?: string
 }
 export interface ArbOpportunitiesListResponse {
   count: number
