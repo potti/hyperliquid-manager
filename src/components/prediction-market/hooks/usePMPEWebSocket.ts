@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import type {
   WsCopyTradePayload,
   WsNewOpportunityPayload,
@@ -15,35 +15,19 @@ export interface UsePMPEWebSocketResult {
 }
 
 /**
- * PMPE real-time channel hook.
- *
- * Backend WebSocket endpoint not yet implemented (TODO(pmpe-ws): subscribe on shared socket).
- * Returns connected=false with no data until a real WS endpoint is available.
+ * PMPE 实时频道。当前项目无统一 WebSocket 客户端，保持空实现（connected=false）。
+ * TODO: 接入现有统一 WS 客户端后替换此处实现。
  */
 export function usePMPEWebSocket(enabled = true): UsePMPEWebSocketResult {
-  const [connected, setConnected] = useState(false)
-  const [lastProfitUpdate, setLastProfitUpdate] =
-    useState<WsProfitUpdatePayload | null>(null)
-  const [lastNewOpportunity, setLastNewOpportunity] =
-    useState<WsNewOpportunityPayload | null>(null)
-  const [lastCopyTrade, setLastCopyTrade] =
-    useState<WsCopyTradePayload | null>(null)
-
+  // No mock data - always return disconnected state until real WS is integrated
   useEffect(() => {
-    if (!enabled) return
-    // TODO(pmpe-ws): connect to backend WS and subscribe to:
-    //   - pmpe:profit-update
-    //   - pmpe:new-opportunity
-    //   - pmpe:copy-trade
-    // Connected state and data updates should be driven by the real socket.
-    setConnected(false)
-    return () => setConnected(false)
+    // no-op: no WebSocket subscription yet
   }, [enabled])
 
   return {
-    connected,
-    lastProfitUpdate,
-    lastNewOpportunity,
-    lastCopyTrade,
+    connected: false,
+    lastProfitUpdate: null,
+    lastNewOpportunity: null,
+    lastCopyTrade: null,
   }
 }
