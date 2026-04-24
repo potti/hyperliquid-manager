@@ -5,7 +5,7 @@ export interface PMPEConfig {
   arb_enabled: boolean
   copy_enabled: boolean
   polymarket?: { gamma_api_url?: string; data_api_url?: string }
-  kalshi?: { api_url?: string; ticker?: string }
+
   predict?: { api_url?: string; api_key?: string }
   smart_money?: SmartMoneyConfigDTO
   arb?: ArbConfigDTO
@@ -46,15 +46,13 @@ export interface PMPEConfigPatch {
 export interface PMMarketQuotes {
   poly_yes: number
   poly_no: number
-  kalshi_yes: number
-  kalshi_no: number
   predict_yes: number
   predict_no: number
   updated_at: number
 }
 export interface PMMarketMapping {
   poly: { event_id: string; market_ids: string[]; slug: string }
-  kalshi: { ticker: string; market_ids: string[]; title: string }
+
   predict: { market_id: string; title: string; chain: string }
   confidence: number
   method: string
@@ -67,7 +65,7 @@ export interface PMMarket {
   event_end_ts: number
   mapping: PMMarketMapping
   quotes: PMMarketQuotes
-  liquidity: { poly: number; kalshi: number; predict: number; min_liquidity_ok: boolean }
+  liquidity: { poly: number; predict: number; min_liquidity_ok: boolean }
   state: { is_active: boolean; is_resolved: boolean }
 }
 export interface PMMarketsListResponse {
@@ -103,7 +101,7 @@ export interface SmartWalletsListResponse {
 
 // ---------- Arbitrage ----------
 export interface ArbLeg {
-  venue: 'polymarket' | 'kalshi' | 'predict'
+  venue: 'polymarket' | 'predict'
   side: 'YES' | 'NO'
   price: number
   size: number

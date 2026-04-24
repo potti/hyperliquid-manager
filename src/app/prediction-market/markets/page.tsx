@@ -34,7 +34,7 @@ export default function MarketsPage() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [drawerMarket, setDrawerMarket] = useState<PMMarket | null>(null)
   const [refreshingKey, setRefreshingKey] = useState<string | null>(null)
-  const [form] = Form.useForm<{ poly_slug: string; kalshi_ticker: string }>()
+  const [form] = Form.useForm<{ poly_slug: string }>()
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -79,7 +79,7 @@ export default function MarketsPage() {
     setDrawerMarket(row)
     form.setFieldsValue({
       poly_slug: row.mapping?.poly?.slug ?? '',
-      kalshi_ticker: row.mapping?.kalshi?.ticker ?? '',
+
     })
     setDrawerOpen(true)
   }
@@ -123,16 +123,7 @@ export default function MarketsPage() {
       key: 'poly_no',
       render: (_, r) => r.quotes?.poly_no?.toFixed(4) ?? '—',
     },
-    {
-      title: 'Kalshi YES',
-      key: 'kalshi_yes',
-      render: (_, r) => r.quotes?.kalshi_yes?.toFixed(4) ?? '—',
-    },
-    {
-      title: 'Kalshi NO',
-      key: 'kalshi_no',
-      render: (_, r) => r.quotes?.kalshi_no?.toFixed(4) ?? '—',
-    },
+
     {
       title: 'Predict YES',
       key: 'predict_yes',
@@ -155,10 +146,9 @@ export default function MarketsPage() {
       key: 'liquidity',
       render: (_, r) => {
         const p = r.liquidity?.poly
-        const k = r.liquidity?.kalshi
         const pr = r.liquidity?.predict
-        if (p == null && k == null && pr == null) return '—'
-        return `P:${(p ?? 0).toFixed(0)} / K:${(k ?? 0).toFixed(0)} / Pred:${(pr ?? 0).toFixed(0)}`
+        if (p == null && pr == null) return '—'
+        return `P:${(p ?? 0).toFixed(0)} / Pred:${(pr ?? 0).toFixed(0)}`
       },
     },
     {
@@ -272,13 +262,7 @@ export default function MarketsPage() {
           >
             <Input placeholder="例如 event-slug" />
           </Form.Item>
-          <Form.Item
-            name="kalshi_ticker"
-            label="Kalshi ticker"
-            rules={[{ required: true, message: '请输入' }]}
-          >
-            <Input placeholder="例如 KX-..." />
-          </Form.Item>
+
           <Button type="primary" htmlType="submit" block>
             提交
           </Button>

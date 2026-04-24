@@ -50,18 +50,18 @@ export function usePMPEWebSocket(enabled = true): UsePMPEWebSocketResult {
 
     const profitIv = setInterval(pushMockProfit, 45_000)
 
-    const venues: Array<'polymarket'|'kalshi'|'predict'> = ['polymarket', 'kalshi', 'predict']
+    const venues: Array<'polymarket'|'predict'> = ['polymarket', 'predict']
     const oppIv = setInterval(() => {
       // 20% chance of poly_predict_arb opportunity
       const isPolyPredict = Math.random() < 0.2
-      const legA: { venue: 'polymarket'|'kalshi'|'predict'; side: 'YES'|'NO'; price: number; size: number } = {
+      const legA: { venue: 'polymarket'|'predict'; side: 'YES'|'NO'; price: number; size: number } = {
         venue: isPolyPredict ? 'polymarket' : 'polymarket',
         side: 'YES',
         price: 0.3 + Math.random() * 0.4,
         size: 0,
       }
-      const legB: { venue: 'polymarket'|'kalshi'|'predict'; side: 'YES'|'NO'; price: number; size: number } = {
-        venue: isPolyPredict ? 'predict' : 'kalshi',
+      const legB: { venue: 'polymarket'|'predict'; side: 'YES'|'NO'; price: number; size: number } = {
+        venue: isPolyPredict ? 'predict' : 'polymarket',
         side: 'NO',
         price: 0.25 + Math.random() * 0.35,
         size: 0,
@@ -74,7 +74,7 @@ export function usePMPEWebSocket(enabled = true): UsePMPEWebSocketResult {
         opportunity: {
           event_key: `evt_${Date.now()}`,
           pm_market_id: 'mock',
-          direction: isPolyPredict ? 'poly_predict_arb' : 'buy_poly_yes_kalshi_no',
+          direction: isPolyPredict ? 'poly_predict_arb' : 'poly_yes_no_arb',
           legs: { leg_a: legA, leg_b: legB },
           gross_spread: netSpread + 0.01,
           fee_estimate: 0.01,

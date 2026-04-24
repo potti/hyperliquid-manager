@@ -4,7 +4,7 @@ import { LinkOutlined } from '@ant-design/icons'
 import { Button, Space } from 'antd'
 
 export interface MarketLinkProps {
-  kind: 'etherscan' | 'polymarket' | 'kalshi'
+  kind: 'etherscan' | 'polymarket'
   href: string
   label?: string
 }
@@ -12,7 +12,6 @@ export interface MarketLinkProps {
 const kindLabel: Record<MarketLinkProps['kind'], string> = {
   etherscan: 'Etherscan',
   polymarket: 'Polymarket',
-  kalshi: 'Kalshi',
 }
 
 export default function MarketLink({ kind, href, label }: MarketLinkProps) {

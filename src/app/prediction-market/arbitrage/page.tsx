@@ -20,12 +20,12 @@ import type { ArbOpportunity, PMMarket } from '@/services/pmpe/types'
 import SpreadFilter from '@/components/prediction-market/SpreadFilter'
 import { usePMPEWebSocket } from '@/components/prediction-market/hooks/usePMPEWebSocket'
 
-type PlatformFilter = 'all' | 'polymarket' | 'kalshi' | 'predict'
+type PlatformFilter = 'all' | 'polymarket' | 'predict'
 type StatusFilter = 'all' | 'new' | 'executing' | 'filled'
 
 function legPrice(
   opp: ArbOpportunity,
-  venue: 'polymarket' | 'kalshi' | 'predict',
+  venue: 'polymarket' | 'predict',
   side: 'YES' | 'NO'
 ): number {
   const legs = [opp.legs.leg_a, opp.legs.leg_b]
@@ -48,9 +48,8 @@ function liquidityLabel(eventKey: string, map: Map<string, PMMarket>): string {
   const m = map.get(eventKey)
   if (!m) return '—'
   const p = m.liquidity?.poly ?? 0
-  const k = m.liquidity?.kalshi ?? 0
   const pr = m.liquidity?.predict ?? 0
-  return `P:${p.toFixed(0)} / K:${k.toFixed(0)} / Pred:${pr.toFixed(0)}`
+  return `P:${p.toFixed(0)} / Pred:${pr.toFixed(0)}`
 }
 
 export default function ArbitragePage() {
@@ -147,10 +146,8 @@ export default function ArbitragePage() {
       if ((o.net_spread ?? 0) < minSpread) return false
       if (platform === 'all') return true
       const hasPoly = o.legs.leg_a.venue === 'polymarket' || o.legs.leg_b.venue === 'polymarket'
-      const hasKalshi = o.legs.leg_a.venue === 'kalshi' || o.legs.leg_b.venue === 'kalshi'
       const hasPredict = o.legs.leg_a.venue === 'predict' || o.legs.leg_b.venue === 'predict'
       if (platform === 'polymarket') return hasPoly
-      if (platform === 'kalshi') return hasKalshi
       if (platform === 'predict') return hasPredict
       return true
     })
@@ -188,14 +185,19 @@ export default function ArbitragePage() {
       render: (_, r) => legPrice(r, 'polymarket', 'YES').toFixed(4),
     },
     {
-      title: 'Kalshi NO',
-      key: 'kn',
-      render: (_, r) => legPrice(r, 'kalshi', 'NO').toFixed(4),
+      title: 'Poly NO',
+      key: 'pn',
+      render: (_, r) => legPrice(r, 'polymarket', 'NO').toFixed(4),
     },
     {
       title: 'Predict YES',
       key: 'pry',
       render: (_, r) => legPrice(r, 'predict', 'YES').toFixed(4),
+    },
+    {
+      title: 'Predict NO',
+      key: 'prn',
+      render: (_, r) => legPrice(r, 'predict', 'NO').toFixed(4),
     },
     {
       title: 'Spread(净)',
@@ -294,7 +296,6 @@ export default function ArbitragePage() {
               options={[
                 { value: 'all', label: '全部' },
                 { value: 'polymarket', label: 'Polymarket' },
-                { value: 'kalshi', label: 'Kalshi' },
                 { value: 'predict', label: 'Predict.fun' },
               ]}
             />
