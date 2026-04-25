@@ -62,7 +62,7 @@ export default function PolyProfitDashboard() {
         ])
         if (cancelled) return
         setStats(st)
-        setHistory(mergeHistory(hist))
+        setHistory(mergeHistory(hist.data))
         setWallets(swRes.wallets ?? [])
         setOpps(aoRes.opportunities ?? [])
       } catch {
@@ -137,7 +137,7 @@ export default function PolyProfitDashboard() {
         </Typography.Title>
         <Badge
           status={connected ? 'success' : 'default'}
-          text={connected ? '实时通道(模拟)' : '连接中…'}
+          text={connected ? '实时通道(模拟)' : '实时数据未开通'}
         />
       </Space>
 

@@ -15,7 +15,7 @@ export interface UsePMPEWebSocketResult {
 }
 
 /**
- * PMPE 实时频道。当前项目无统一 WebSocket 客户端，保持空实现（connected=false）。
+ * PMPE 实时频道。connected=false 表示尚未接入真实 WebSocket（无统一 WS 客户端）。
  * TODO: 接入现有统一 WS 客户端后替换此处实现。
  */
 export function usePMPEWebSocket(enabled = true): UsePMPEWebSocketResult {

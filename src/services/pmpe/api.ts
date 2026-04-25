@@ -8,6 +8,7 @@ import type {
   ArbOpportunitiesListResponse,
   ProfitStats,
   ProfitHistoryPoint,
+  ProfitHistoryResponse,
   PMMarket,
 } from './types'
 
@@ -88,13 +89,14 @@ export const pmpeApi = {
   },
 
   getProfitStats: () => request<ProfitStats>(PMPE_PATHS.statsProfit),
-  getProfitHistory: async (): Promise<ProfitHistoryPoint[]> => {
+  getProfitHistory: async (): Promise<ProfitHistoryResponse> => {
     try {
-      return await request<ProfitHistoryPoint[]>(
+      const data = await request<ProfitHistoryPoint[]>(
         PMPE_PATHS.statsProfitHistory
       )
-    } catch {
-      return []
+      return { data }
+    } catch (err) {
+      return { data: [], error: err instanceof Error ? err.message : String(err) }
     }
   },
 }

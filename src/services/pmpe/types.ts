@@ -141,6 +141,11 @@ export interface ProfitHistoryPoint {
   cumulative?: number
 }
 
+export type ProfitHistoryResponse = {
+  data: ProfitHistoryPoint[]
+  error?: string
+}
+
 // ---------- WebSocket payloads ----------
 export interface WsProfitUpdatePayload {
   channel: 'pmpe:profit-update'
