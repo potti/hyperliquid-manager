@@ -66,7 +66,7 @@ export default function PolyProfitDashboard() {
         if (hist.error) {
           setHistoryError(hist.error)
           setHistory([])
-        } else {
+        } else if (hist.data.length > 0) {
           setHistory(mergeHistory(hist.data))
         }
         setWallets(swRes.wallets ?? [])

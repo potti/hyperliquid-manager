@@ -143,7 +143,7 @@ export default function SmartMoneyPage() {
         PolyProfit - 聪明钱跟单
       </Typography.Title>
       <Typography.Text type="secondary">
-        实时通道：{connected ? '已连接(模拟)' : '实时通道未开通'}
+        实时通道：{connected ? '实时通道(模拟)' : '实时通道未开通'}
       </Typography.Text>
 
       <Layout style={{ marginTop: 16, background: 'transparent' }}>
