@@ -252,7 +252,7 @@ export default function ArbitragePage() {
         跨平台套利机会（Polymarket vs Predict.fun）
       </Typography.Title>
       <Typography.Text type="secondary">
-        实时通道：{connected ? '已连接(模拟)' : '连接中…'}
+        实时通道：{connected ? '已连接(模拟)' : '实时通道未开通'}
       </Typography.Text>
 
       <Row gutter={16} style={{ marginTop: 16 }}>
