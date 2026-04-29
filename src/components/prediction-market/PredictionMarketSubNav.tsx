@@ -34,6 +34,10 @@ const items: MenuProps['items'] = [
     key: '/prediction-market/monitoring',
     label: <Link href="/prediction-market/monitoring">监控告警</Link>,
   },
+  {
+    key: '/prediction-market/points',
+    label: <Link href="/prediction-market/points">积分刷分</Link>,
+  },
 ]
 
 export default function PredictionMarketSubNav() {

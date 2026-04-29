@@ -10,4 +10,7 @@ export const PMPE_PATHS = {
   arbOpportunities: '/arb/opportunities',
   statsProfit: '/stats/profit',
   statsProfitHistory: '/stats/profit-history',
+  pointsStatus: '/points/status',
+  pointsOrders: '/points/orders',
+  pointsPlan: '/points/plan',
 } as const
