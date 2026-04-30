@@ -19,6 +19,7 @@ const CollectionsPage = dynamic(() => import('@/app/dashboard/collections/page')
 const FundingRatesPage = dynamic(() => import('@/app/dashboard/funding-rates/page'), { ssr: false })
 const MarketDailyMetricsPage = dynamic(() => import('@/app/dashboard/market-daily-metrics/page'), { ssr: false })
 const TagsPage = dynamic(() => import('@/app/dashboard/management/tags/page'), { ssr: false })
+const StrategyAccountsPage = dynamic(() => import('@/app/dashboard/strategy-accounts/page'), { ssr: false })
 
 const PolyProfitDashboard = dynamic(
   () => import('@/components/prediction-market/PolyProfitDashboard'),
@@ -106,6 +107,14 @@ export const tabConfigMap: Record<string, TabConfig> = {
     closable: true,
     singleton: true, // 单模态：只能打开一个标签管理页面
     icon: <TagsOutlined />,
+  },
+  '/dashboard/strategy-accounts': {
+    key: '/dashboard/strategy-accounts',
+    label: '策略账户管理',
+    component: StrategyAccountsPage,
+    closable: true,
+    singleton: true,
+    icon: <RocketOutlined />,
   },
   '/prediction-market/dashboard': {
     key: '/prediction-market/dashboard',

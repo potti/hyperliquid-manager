@@ -135,6 +135,12 @@ export default function DashboardLayout({ children }: { children?: React.ReactNo
       ],
     },
     {
+      key: '/dashboard/strategy-accounts',
+      icon: <RocketOutlined />,
+      label: '策略账户管理',
+      onClick: () => handleMenuClick('/dashboard/strategy-accounts'),
+    },
+    {
       key: '/prediction-market',
       icon: <LineChartOutlined />,
       label: '预测市场',

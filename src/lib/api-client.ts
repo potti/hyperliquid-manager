@@ -4,7 +4,7 @@
  */
 
 // 后端 API 基础 URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9090'
 
 // 获取认证 token
 function getAuthToken(): string | null {
