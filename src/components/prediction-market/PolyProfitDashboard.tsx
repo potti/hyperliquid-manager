@@ -39,6 +39,7 @@ function mergeHistory(
 export default function PolyProfitDashboard() {
   const [stats, setStats] = useState<ProfitStats | null>(null)
   const [history, setHistory] = useState<ProfitHistoryPoint[]>([])
+  const [historyError, setHistoryError] = useState<string | null>(null)
   const [wallets, setWallets] = useState<SmartWallet[]>([])
   const [opps, setOpps] = useState<ArbOpportunity[]>([])
   const [loading, setLoading] = useState(true)
@@ -62,7 +63,12 @@ export default function PolyProfitDashboard() {
         ])
         if (cancelled) return
         setStats(st)
-        setHistory(mergeHistory(hist))
+        if (hist.error) {
+          setHistoryError(hist.error)
+          setHistory([])
+        } else if (hist.data.length > 0) {
+          setHistory(mergeHistory(hist.data))
+        }
         setWallets(swRes.wallets ?? [])
         setOpps(aoRes.opportunities ?? [])
       } catch {
@@ -137,7 +143,7 @@ export default function PolyProfitDashboard() {
         </Typography.Title>
         <Badge
           status={connected ? 'success' : 'default'}
-          text={connected ? '实时通道(模拟)' : '连接中…'}
+          text={connected ? '实时通道(模拟)' : '实时数据未开通'}
         />
       </Space>
 
@@ -196,7 +202,11 @@ export default function PolyProfitDashboard() {
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
         <Col xs={24} lg={12}>
           <div style={{ background: '#fff', padding: 16, borderRadius: 8 }}>
-            <ProfitHistoryChart data={history} />
+            {historyError ? (
+              <Typography.Text type="danger">收益历史加载失败：{historyError}</Typography.Text>
+            ) : (
+              <ProfitHistoryChart data={history} />
+            )}
           </div>
         </Col>
         <Col xs={24} lg={12}>
