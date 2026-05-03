@@ -6,6 +6,7 @@ import { PlusOutlined, DownloadOutlined, SwapOutlined, UploadOutlined, KeyOutlin
 import { apiClient } from '@/lib/api-client'
 import { copyTradingApi } from '@/lib/api-client'
 import DepositModal from '@/components/wallet/DepositModal'
+import WithdrawModal from '@/components/wallet/WithdrawModal'
 import AddTraderModal from '@/components/copy-trading/AddTraderModal'
 import TraderSubscribeModal, { TraderInfo, SubscribeFormValues } from '@/components/copy-trading/TraderSubscribeModal'
 import { useOpenTraderTab } from '@/utils/tab-utils'
@@ -124,6 +125,10 @@ export default function DemoPage() {
   const [depositModalVisible, setDepositModalVisible] = useState(false)
   const [depositWallet, setDepositWallet] = useState<Wallet | null>(null)
   const [depositLoading, setDepositLoading] = useState(false)
+
+  // 提现相关状态
+  const [withdrawModalVisible, setWithdrawModalVisible] = useState(false)
+  const [withdrawWallet, setWithdrawWallet] = useState<Wallet | null>(null)
 
   // 跟单相关状态
   const [addTraderModalVisible, setAddTraderModalVisible] = useState(false)
@@ -268,6 +273,18 @@ export default function DemoPage() {
     } finally {
       setDepositLoading(false)
     }
+  }
+
+  // 打开提现模态框
+  const handleOpenWithdrawModal = (wallet: Wallet) => {
+    setWithdrawWallet(wallet)
+    setWithdrawModalVisible(true)
+  }
+
+  // 关闭提现模态框
+  const handleCloseWithdrawModal = () => {
+    setWithdrawModalVisible(false)
+    setWithdrawWallet(null)
   }
 
   // 查询交易员信息
@@ -735,11 +752,11 @@ export default function DemoPage() {
           >
             转账
           </Button>
-          <Button 
-            type="link" 
-            size="small" 
+          <Button
+            type="link"
+            size="small"
             icon={<UploadOutlined />}
-            onClick={() => message.info(`提现功能开发中 - 钱包: ${record.name}`)}
+            onClick={() => handleOpenWithdrawModal(record)}
           >
             提现
           </Button>
@@ -1323,6 +1340,21 @@ export default function DemoPage() {
             onClose={handleCloseDepositModal}
             onConfirm={handleConfirmDeposit}
             loading={depositLoading}
+          />
+        )}
+
+        {/* 提现模态框 */}
+        {withdrawWallet && (
+          <WithdrawModal
+            visible={withdrawModalVisible}
+            wallet={{
+              id: withdrawWallet.id,
+              name: withdrawWallet.name,
+              address: withdrawWallet.address,
+              hyperliquid: withdrawWallet.hyperliquid,
+            }}
+            onClose={handleCloseWithdrawModal}
+            onSuccess={fetchWallets}
           />
         )}
 
