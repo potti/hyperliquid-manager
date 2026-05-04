@@ -38,6 +38,10 @@ const items: MenuProps['items'] = [
     key: '/prediction-market/points',
     label: <Link href="/prediction-market/points">积分刷分</Link>,
   },
+  {
+    key: '/prediction-market/strategies',
+    label: <Link href="/prediction-market/strategies">策略监控</Link>,
+  },
 ]
 
 export default function PredictionMarketSubNav() {

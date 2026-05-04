@@ -174,6 +174,11 @@ export default function DashboardLayout({ children }: { children?: React.ReactNo
           label: '监控告警',
           onClick: () => handleMenuClick('/prediction-market/monitoring'),
         },
+        {
+          key: '/prediction-market/strategies',
+          label: '策略监控',
+          onClick: () => handleMenuClick('/prediction-market/strategies'),
+        },
       ],
     },
   ]
