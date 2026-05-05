@@ -42,6 +42,10 @@ const items: MenuProps['items'] = [
     key: '/prediction-market/strategies',
     label: <Link href="/prediction-market/strategies">策略监控</Link>,
   },
+  {
+    key: '/prediction-market/signals',
+    label: <Link href="/prediction-market/signals">信号日志</Link>,
+  },
 ]
 
 export default function PredictionMarketSubNav() {
