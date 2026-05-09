@@ -7,6 +7,7 @@ import {
   AppstoreOutlined,
   TagsOutlined,
   LineChartOutlined,
+  WalletOutlined,
 } from '@ant-design/icons'
 
 // 动态导入页面组件（避免在初始加载时加载所有页面，实现代码分割）
@@ -19,6 +20,7 @@ const CollectionsPage = dynamic(() => import('@/app/dashboard/collections/page')
 const FundingRatesPage = dynamic(() => import('@/app/dashboard/funding-rates/page'), { ssr: false })
 const MarketDailyMetricsPage = dynamic(() => import('@/app/dashboard/market-daily-metrics/page'), { ssr: false })
 const TagsPage = dynamic(() => import('@/app/dashboard/management/tags/page'), { ssr: false })
+const WalletsPage = dynamic(() => import('@/app/dashboard/wallets/page'), { ssr: false })
 const StrategyAccountsPage = dynamic(() => import('@/app/dashboard/strategy-accounts/page'), { ssr: false })
 
 const PolyProfitDashboard = dynamic(
@@ -115,6 +117,14 @@ export const tabConfigMap: Record<string, TabConfig> = {
     closable: true,
     singleton: true,
     icon: <RocketOutlined />,
+  },
+  '/dashboard/wallets': {
+    key: '/dashboard/wallets',
+    label: '钱包管理',
+    component: WalletsPage,
+    closable: true,
+    singleton: true,
+    icon: <WalletOutlined />,
   },
   '/prediction-market/dashboard': {
     key: '/prediction-market/dashboard',

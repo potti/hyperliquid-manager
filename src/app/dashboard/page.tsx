@@ -1,13 +1,44 @@
 'use client'
 
-import { Card, Typography, Row, Col, Statistic, Space, Avatar } from 'antd'
-import { UserOutlined, TeamOutlined, RiseOutlined, DollarOutlined } from '@ant-design/icons'
+import { useState, useEffect } from 'react'
+import { Card, Typography, Row, Col, Statistic, Space, Avatar, Spin } from 'antd'
+import {
+  UserOutlined,
+  TeamOutlined,
+  RiseOutlined,
+  FallOutlined,
+  DollarOutlined,
+  WalletOutlined,
+} from '@ant-design/icons'
 import { useAuth } from '@/contexts/AuthContext'
+import { walletApi } from '@/lib/api-client'
 
 const { Title } = Typography
 
 export default function Dashboard() {
   const { user } = useAuth()
+  const [stats, setStats] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    loadStats()
+  }, [])
+
+  const loadStats = async () => {
+    try {
+      const res = await walletApi.getStats()
+      if (res?.success) {
+        setStats(res.data)
+      }
+    } catch (err) {
+      console.error('Failed to load wallet stats:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const totalPnl = stats?.total_pnl ?? 0
+  const isPnlPositive = totalPnl >= 0
 
   return (
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
@@ -23,54 +54,62 @@ export default function Dashboard() {
           </Space>
         </Card>
 
-        <Row gutter={[16, 16]}>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
-              <Statistic
-                title="总用户数"
-                value={1128}
-                prefix={<UserOutlined />}
-                valueStyle={{ color: '#3f8600' }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
-              <Statistic
-                title="活跃用户"
-                value={893}
-                prefix={<TeamOutlined />}
-                valueStyle={{ color: '#1890ff' }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
-              <Statistic
-                title="增长率"
-                value={11.28}
-                prefix={<RiseOutlined />}
-                suffix="%"
-                valueStyle={{ color: '#cf1322' }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
-              <Statistic
-                title="总收入"
-                value={9280}
-                prefix={<DollarOutlined />}
-                precision={2}
-                valueStyle={{ color: '#faad14' }}
-              />
-            </Card>
-          </Col>
-        </Row>
+        <Spin spinning={loading}>
+          <Row gutter={[16, 16]}>
+            <Col xs={24} sm={12} lg={6}>
+              <Card>
+                <Statistic
+                  title="总钱包数"
+                  value={stats?.total_wallets ?? 0}
+                  prefix={<WalletOutlined />}
+                  valueStyle={{ color: '#3f8600' }}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Card>
+                <Statistic
+                  title="活跃钱包"
+                  value={stats?.active_wallets ?? 0}
+                  prefix={<TeamOutlined />}
+                  valueStyle={{ color: '#1890ff' }}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Card>
+                <Statistic
+                  title="总资产"
+                  value={stats?.total_hl_value ?? 0}
+                  prefix={<DollarOutlined />}
+                  valueStyle={{ color: '#faad14' }}
+                  formatter={(value) => `$${Number(value).toLocaleString()}`}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Card>
+                <Statistic
+                  title="总 PnL"
+                  value={totalPnl}
+                  prefix={isPnlPositive ? <RiseOutlined /> : <FallOutlined />}
+                  valueStyle={{ color: isPnlPositive ? '#3f8600' : '#cf1322' }}
+                  formatter={(value) => `$${Number(value).toLocaleString()}`}
+                />
+              </Card>
+            </Col>
+          </Row>
+        </Spin>
 
         <Card title="系统概览">
-          <p>这是您的管理后台主页。您可以在这里查看系统的整体运行状况。</p>
-          <p>左侧菜单提供了各种管理功能的入口。</p>
+          {stats?.total_wallets > 0 ? (
+            <p>
+              系统正在管理 {stats.total_wallets} 个钱包，其中 {stats.active_wallets ?? 0} 个活跃。
+              {stats.predict_registered > 0 && `Predict.fun 已注册 ${stats.predict_registered} 个。`}
+            </p>
+          ) : (
+            <p>暂无钱包数据，前往钱包管理页面创建您的第一个钱包。</p>
+          )}
         </Card>
       </Space>
   )

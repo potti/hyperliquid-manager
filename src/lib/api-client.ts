@@ -354,3 +354,17 @@ export interface MarketDailyMetricsResponse {
 export const marketDailyMetricsApi = {
   getDailyMetrics: () => get<MarketDailyMetricsResponse>('/api/v1/market/daily-metrics'),
 }
+
+/**
+ * 钱包管理相关 API
+ */
+export const walletApi = {
+  // 获取钱包统计（可能未实现，前端会 fallback）
+  getStats: () => get('/api/v1/wallets/stats'),
+  // 获取钱包列表（与 demo 页保持一致）
+  list: () => get('/api/v1/wallet/list'),
+  // 创建钱包
+  create: (name: string) => post('/api/v1/wallet/create', { name }),
+  // 删除钱包
+  delete: (id: string) => del(`/api/v1/wallet/${id}`),
+}

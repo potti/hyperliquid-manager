@@ -14,6 +14,7 @@ import {
   TagsOutlined,
   CloseOutlined,
   LineChartOutlined,
+  WalletOutlined,
 } from '@ant-design/icons'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
@@ -131,6 +132,12 @@ export default function DashboardLayout({ children }: { children?: React.ReactNo
           icon: <TagsOutlined />,
           label: '标签管理',
           onClick: () => handleMenuClick('/dashboard/management/tags'),
+        },
+        {
+          key: '/dashboard/wallets',
+          icon: <WalletOutlined />,
+          label: '钱包管理',
+          onClick: () => handleMenuClick('/dashboard/wallets'),
         },
       ],
     },

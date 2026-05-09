@@ -6,6 +6,7 @@ import { PlusOutlined, DownloadOutlined, SwapOutlined, UploadOutlined, KeyOutlin
 import { apiClient } from '@/lib/api-client'
 import { copyTradingApi } from '@/lib/api-client'
 import DepositModal from '@/components/wallet/DepositModal'
+import WithdrawModal from '@/components/wallet/WithdrawModal'
 import AddTraderModal from '@/components/copy-trading/AddTraderModal'
 import TraderSubscribeModal, { TraderInfo, SubscribeFormValues } from '@/components/copy-trading/TraderSubscribeModal'
 import { useOpenTraderTab } from '@/utils/tab-utils'
@@ -124,6 +125,11 @@ export default function DemoPage() {
   const [depositModalVisible, setDepositModalVisible] = useState(false)
   const [depositWallet, setDepositWallet] = useState<Wallet | null>(null)
   const [depositLoading, setDepositLoading] = useState(false)
+
+  // 提现相关状态
+  const [withdrawModalVisible, setWithdrawModalVisible] = useState(false)
+  const [withdrawWallet, setWithdrawWallet] = useState<Wallet | null>(null)
+  const [withdrawLoading, setWithdrawLoading] = useState(false)
 
   // 跟单相关状态
   const [addTraderModalVisible, setAddTraderModalVisible] = useState(false)
@@ -267,6 +273,44 @@ export default function DemoPage() {
       message.error(`确认失败: ${error.message}`)
     } finally {
       setDepositLoading(false)
+    }
+  }
+
+  // 打开提现模态框
+  const handleOpenWithdrawModal = (wallet: Wallet) => {
+    setWithdrawWallet(wallet)
+    setWithdrawModalVisible(true)
+  }
+
+  // 关闭提现模态框
+  const handleCloseWithdrawModal = () => {
+    setWithdrawModalVisible(false)
+    setWithdrawWallet(null)
+  }
+
+  // 确认提现
+  const handleConfirmWithdraw = async (amount: number, destination: string) => {
+    if (!withdrawWallet) return
+    setWithdrawLoading(true)
+    try {
+      const result = await apiClient<{
+        success: boolean
+        message: string
+        amount?: number
+        destination?: string
+        tx_info?: string
+      }>(`/api/v1/wallet/${withdrawWallet.id}/withdraw`, {
+        method: 'POST',
+        body: JSON.stringify({ amount, destination }),
+      })
+      if (result.success) {
+        message.success(`提现成功: ${amount} USDC -> ${destination.slice(0, 6)}...${destination.slice(-4)}`)
+        await fetchWallets()
+      } else {
+        throw new Error(result.message || '提现失败')
+      }
+    } finally {
+      setWithdrawLoading(false)
     }
   }
 
@@ -739,7 +783,7 @@ export default function DemoPage() {
             type="link" 
             size="small" 
             icon={<UploadOutlined />}
-            onClick={() => message.info(`提现功能开发中 - 钱包: ${record.name}`)}
+            onClick={() => handleOpenWithdrawModal(record)}
           >
             提现
           </Button>
@@ -1323,6 +1367,19 @@ export default function DemoPage() {
             onClose={handleCloseDepositModal}
             onConfirm={handleConfirmDeposit}
             loading={depositLoading}
+          />
+        )}
+
+        {/* 提现模态框 */}
+        {withdrawWallet && (
+          <WithdrawModal
+            visible={withdrawModalVisible}
+            walletName={withdrawWallet.name}
+            walletAddress={withdrawWallet.address}
+            withdrawable={toFiniteNumber(withdrawWallet.hyperliquid?.withdrawable)}
+            onClose={handleCloseWithdrawModal}
+            onConfirm={handleConfirmWithdraw}
+            loading={withdrawLoading}
           />
         )}
 
