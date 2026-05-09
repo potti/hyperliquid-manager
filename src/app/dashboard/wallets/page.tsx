@@ -20,6 +20,8 @@ interface Wallet {
   margin_used?: string | number
   withdrawable?: string | number
   is_registered?: boolean
+  predict_registered?: boolean
+  predict_error?: string
   hyperliquid?: {
     account_value: string | number
     unrealized_pnl: string | number
@@ -32,8 +34,9 @@ interface Wallet {
 interface WalletStats {
   total_wallets: number
   active_wallets: number
-  total_balance: number
+  total_hl_value: number
   total_pnl: number
+  predict_registered?: number
 }
 
 export default function WalletsPage() {
@@ -58,7 +61,7 @@ export default function WalletsPage() {
         const computed: WalletStats = {
           total_wallets: list.length,
           active_wallets: list.filter((w) => w.status === 'active').length,
-          total_balance: list.reduce(
+          total_hl_value: list.reduce(
             (sum, w) => sum + toFiniteNumber(w.hyperliquid?.account_value),
             0
           ),

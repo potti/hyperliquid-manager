@@ -10,7 +10,7 @@ import {
 } from '@ant-design/icons'
 import DepositModal from '@/components/wallet/DepositModal'
 import WithdrawModal from '@/components/wallet/WithdrawModal'
-import { walletApi } from '@/lib/api-client'
+import { walletApi, apiClient } from '@/lib/api-client'
 import { normalizeWalletsHyperliquid, toFiniteNumber } from '@/utils/wallet-hyperliquid'
 
 interface Wallet {
@@ -23,6 +23,8 @@ interface Wallet {
   margin_used?: string | number
   withdrawable?: string | number
   is_registered?: boolean
+  predict_registered?: boolean
+  predict_error?: string
   hyperliquid?: {
     account_value: string | number
     unrealized_pnl: string | number
@@ -127,13 +129,11 @@ export default function WalletListTable({ wallets, loading = false, onRefresh }:
     if (!depositWallet) return
     setDepositLoading(true)
     try {
-      const response = await fetch(`/api/v1/wallet/${depositWallet.id}/confirm-deposit`, {
+      const result = await apiClient(`/api/v1/wallet/${depositWallet.id}/confirm-deposit`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
       })
-      const result = await response.json()
-      if (result?.data?.success || result?.success) {
+      if (result?.success || result?.data?.success) {
         message.success('存款确认成功')
         onRefresh()
         setDepositModalVisible(false)
@@ -159,13 +159,11 @@ export default function WalletListTable({ wallets, loading = false, onRefresh }:
     if (!withdrawWallet) return
     setWithdrawLoading(true)
     try {
-      const response = await fetch(`/api/v1/wallet/${withdrawWallet.id}/withdraw`, {
+      const result = await apiClient(`/api/v1/wallet/${withdrawWallet.id}/withdraw`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount, destination }),
       })
-      const result = await response.json()
-      if (result?.data?.success || result?.success) {
+      if (result?.success || result?.data?.success) {
         message.success(`提现成功: ${amount} USDC`)
         onRefresh()
         setWithdrawModalVisible(false)
@@ -245,14 +243,16 @@ export default function WalletListTable({ wallets, loading = false, onRefresh }:
       key: 'predict',
       width: 120,
       render: (_: unknown, record: Wallet) => {
-        const registered = record.hyperliquid?.is_registered
+        const registered = record.predict_registered
+        const error = record.predict_error
         if (registered === undefined || registered === null) {
           return <Tag>未知</Tag>
         }
-        return registered ? (
-          <Tag color="success">已注册</Tag>
-        ) : (
-          <Tag color="warning">未注册</Tag>
+        if (registered) {
+          return <Tag color="success">已注册</Tag>
+        }
+        return (
+          <Tag color="error" title={error}>未注册</Tag>
         )
       },
     },

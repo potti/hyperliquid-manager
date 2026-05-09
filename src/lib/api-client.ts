@@ -359,8 +359,8 @@ export const marketDailyMetricsApi = {
  * 钱包管理相关 API
  */
 export const walletApi = {
-  // 获取钱包统计（可能未实现，前端会 fallback）
-  getStats: () => get('/api/v1/wallets/stats'),
+  // 获取钱包统计
+  getStats: () => get('/api/v1/wallet/stats'),
   // 获取钱包列表（与 demo 页保持一致）
   list: () => get('/api/v1/wallet/list'),
   // 创建钱包

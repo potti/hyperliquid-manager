@@ -26,10 +26,8 @@ export default function Dashboard() {
 
   const loadStats = async () => {
     try {
-      const res = await walletApi.getStats()
-      if (res?.success) {
-        setStats(res.data)
-      }
+      const data = await walletApi.getStats()
+      setStats(data)
     } catch (err) {
       console.error('Failed to load wallet stats:', err)
     } finally {

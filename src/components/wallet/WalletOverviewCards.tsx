@@ -12,8 +12,9 @@ import {
 interface WalletStats {
   total_wallets: number
   active_wallets: number
-  total_balance: number
+  total_hl_value: number
   total_pnl: number
+  predict_registered?: number
 }
 
 interface WalletOverviewCardsProps {
@@ -46,7 +47,7 @@ export default function WalletOverviewCards({ stats, loading = false }: WalletOv
         <Card hoverable loading={loading}>
           <Statistic
             title="总资产"
-            value={stats?.total_balance ?? 0}
+            value={stats?.total_hl_value ?? 0}
             precision={2}
             prefix={<DollarOutlined />}
             suffix="USD"
