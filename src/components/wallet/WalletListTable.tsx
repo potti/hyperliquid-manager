@@ -133,13 +133,13 @@ export default function WalletListTable({ wallets, loading = false, onRefresh }:
         method: 'POST',
         body: JSON.stringify({}),
       })
-      if (result?.success || result?.data?.success) {
+      if (result?.success) {
         message.success('存款确认成功')
         onRefresh()
         setDepositModalVisible(false)
         setDepositWallet(null)
       } else {
-        message.warning(result?.data?.message || result?.message || '操作完成')
+        message.warning(result?.message || '操作完成')
       }
     } catch (error: any) {
       message.error(`确认失败: ${error.message}`)
@@ -159,17 +159,18 @@ export default function WalletListTable({ wallets, loading = false, onRefresh }:
     if (!withdrawWallet) return
     setWithdrawLoading(true)
     try {
-      const result = await apiClient(`/api/v1/wallet/${withdrawWallet.id}/withdraw`, {
+      const res = await apiClient(`/api/v1/wallet/${withdrawWallet.id}/withdraw`, {
         method: 'POST',
         body: JSON.stringify({ amount, destination }),
       })
-      if (result?.success || result?.data?.success) {
+      const withdrawResult = res?.result ?? res
+      if (withdrawResult?.success) {
         message.success(`提现成功: ${amount} USDC`)
         onRefresh()
         setWithdrawModalVisible(false)
         setWithdrawWallet(null)
       } else {
-        throw new Error(result?.data?.message || result?.message || '提现失败')
+        throw new Error(withdrawResult?.message || '提现失败')
       }
     } catch (error: any) {
       message.error(error.message || '提现失败')
