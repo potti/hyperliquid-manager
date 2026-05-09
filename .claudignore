@@ -1,0 +1,7 @@
+**/*.bin
+**/*.exe
+/build
+/target
+.cursor/
+logs/
+node_modules/

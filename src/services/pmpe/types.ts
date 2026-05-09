@@ -168,3 +168,49 @@ export interface WsCopyTradePayload {
   amount: number
   ts: number
 }
+
+// ---------- Points farming ----------
+export interface PointsOrder {
+  id: string
+  market_id: string
+  market_title?: string
+  side: 'YES' | 'NO'
+  price: number
+  size: number
+  status: 'PENDING' | 'OPEN' | 'FILLED' | 'SELLING' | 'SOLD' | 'TIMEOUT' | 'CANCELLED'
+  buy_order_id?: string
+  sell_order_id?: string
+  created_at: number
+  updated_at: number
+}
+
+export interface PointsFarmStatus {
+  active_orders: number
+  today_filled: number
+  today_cancelled: number
+  cancel_rate: number
+  paused: boolean
+  pause_reason?: string
+  total_exposure: number
+  last_run_at?: string
+}
+
+export interface FarmTarget {
+  market_id: string
+  title: string
+  side: 'YES' | 'NO'
+  price: number
+  size: number
+  score: number
+  reason: string
+}
+
+export interface FarmPlan {
+  targets: FarmTarget[]
+  dry_run: boolean
+}
+
+export interface PointsOrdersListResponse {
+  count: number
+  orders: PointsOrder[]
+}

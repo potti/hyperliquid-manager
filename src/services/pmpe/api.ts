@@ -10,6 +10,9 @@ import type {
   ProfitHistoryPoint,
   ProfitHistoryResponse,
   PMMarket,
+  PointsFarmStatus,
+  PointsOrdersListResponse,
+  FarmPlan,
 } from './types'
 
 const API_BASE_URL =
@@ -99,4 +102,19 @@ export const pmpeApi = {
       return { data: [], error: err instanceof Error ? err.message : String(err) }
     }
   },
+
+  getPointsStatus: () =>
+    request<PointsFarmStatus>(PMPE_PATHS.pointsStatus),
+
+  listPointsOrders: (params?: { status?: string; limit?: number }) => {
+    const q = new URLSearchParams()
+    if (params?.status) q.set('status', params.status)
+    if (params?.limit != null) q.set('limit', String(params.limit))
+    const qs = q.toString()
+    return request<PointsOrdersListResponse>(
+      `${PMPE_PATHS.pointsOrders}${qs ? `?${qs}` : ''}`
+    )
+  },
+
+  getFarmPlan: () => request<FarmPlan>(PMPE_PATHS.pointsPlan),
 }

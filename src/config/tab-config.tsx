@@ -51,6 +51,18 @@ const PolyProfitMonitoring = dynamic(
   () => import('@/app/prediction-market/monitoring/page'),
   { ssr: false }
 )
+const PolyProfitPoints = dynamic(
+  () => import('@/app/prediction-market/points/page'),
+  { ssr: false }
+)
+const PolyProfitStrategies = dynamic(
+  () => import('@/app/prediction-market/strategies/page'),
+  { ssr: false }
+)
+const PolyProfitSignals = dynamic(
+  () => import('@/app/prediction-market/signals/page'),
+  { ssr: false }
+)
 
 // Tab 配置映射
 export const tabConfigMap: Record<string, TabConfig> = {
@@ -178,6 +190,30 @@ export const tabConfigMap: Record<string, TabConfig> = {
     key: '/prediction-market/monitoring',
     label: '监控告警',
     component: PolyProfitMonitoring,
+    closable: true,
+    singleton: true,
+    icon: <LineChartOutlined />,
+  },
+  '/prediction-market/points': {
+    key: '/prediction-market/points',
+    label: '积分刷分',
+    component: PolyProfitPoints,
+    closable: true,
+    singleton: true,
+    icon: <LineChartOutlined />,
+  },
+  '/prediction-market/strategies': {
+    key: '/prediction-market/strategies',
+    label: '策略监控',
+    component: PolyProfitStrategies,
+    closable: true,
+    singleton: true,
+    icon: <LineChartOutlined />,
+  },
+  '/prediction-market/signals': {
+    key: '/prediction-market/signals',
+    label: '信号日志',
+    component: PolyProfitSignals,
     closable: true,
     singleton: true,
     icon: <LineChartOutlined />,
