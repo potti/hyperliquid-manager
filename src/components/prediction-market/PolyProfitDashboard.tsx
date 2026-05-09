@@ -123,7 +123,28 @@ export default function PolyProfitDashboard() {
   ]
 
   const oppColumns: ColumnsType<ArbOpportunity> = [
-    { title: '事件', dataIndex: 'event_key', ellipsis: true },
+    {
+      title: '事件',
+      dataIndex: 'event_key',
+      ellipsis: true,
+      render: (key: string, record: ArbOpportunity) => {
+        // 优先用 event_title，否则清理 event_key
+        let display: string = (record as any).event_title || key || ''
+
+        // 去掉 "poly:" 前缀
+        display = display.replace(/^poly:/, '')
+
+        // 去掉 "option:" 及其后的内容
+        display = display.replace(/\s*option:.*$/i, '')
+
+        // 截断
+        if (display.length > 50) {
+          display = display.slice(0, 50) + '...'
+        }
+
+        return <span title={key}>{display || '—'}</span>
+      },
+    },
     {
       title: '净价差',
       dataIndex: 'net_spread',

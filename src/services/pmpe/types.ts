@@ -109,6 +109,7 @@ export interface ArbLeg {
 export interface ArbOpportunity {
   id?: string
   event_key: string
+  event_title?: string
   pm_market_id: string
   direction: string
   legs: { leg_a: ArbLeg; leg_b: ArbLeg }
