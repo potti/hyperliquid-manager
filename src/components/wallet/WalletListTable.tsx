@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Table, Button, Tag, Space, message, Popconfirm, Empty } from 'antd'
+import { Table, Button, Tag, Space, message, Popconfirm, Empty, Typography } from 'antd'
 import {
   DownloadOutlined,
   UploadOutlined,
@@ -40,11 +40,25 @@ interface WalletListTableProps {
   onRefresh: () => void
 }
 
-// 格式化地址显示
-const formatAddress = (address: string) => {
+const formatWalletAddress = (address: string) => {
   if (!address || address.length < 10) return address
   return `${address.slice(0, 6)}...${address.slice(-4)}`
 }
+
+const formatDepositAddress = (address: string) => {
+  if (!address || address.length < 18) return address
+  return `${address.slice(0, 10)}...${address.slice(-8)}`
+}
+
+const AddressText = ({ address, compact = false }: { address: string; compact?: boolean }) => (
+  <Typography.Text
+    copyable={{ text: address }}
+    title={address}
+    style={{ fontFamily: 'monospace', fontSize: 13 }}
+  >
+    {compact ? formatDepositAddress(address) : formatWalletAddress(address)}
+  </Typography.Text>
+)
 
 // 状态配置
 const getStatusConfig = (status: string) => {
@@ -213,13 +227,18 @@ export default function WalletListTable({ wallets, loading = false, onRefresh }:
       width: 150,
     },
     {
-      title: '地址',
+      title: '钱包地址',
       dataIndex: 'address',
       key: 'address',
-      width: 160,
-      render: (text: string) => (
-        <span style={{ fontFamily: 'monospace', fontSize: 13 }}>{formatAddress(text)}</span>
-      ),
+      width: 220,
+      render: (text: string) => <AddressText address={text} />,
+    },
+    {
+      title: '充值地址',
+      dataIndex: 'address',
+      key: 'deposit_address',
+      width: 220,
+      render: (text: string) => <AddressText address={text} compact />,
     },
     {
       title: '状态',
@@ -330,7 +349,7 @@ export default function WalletListTable({ wallets, loading = false, onRefresh }:
         dataSource={wallets}
         rowKey="id"
         loading={loading}
-        scroll={{ x: 1000 }}
+        scroll={{ x: 1350 }}
         pagination={false}
         locale={{
           emptyText: (
