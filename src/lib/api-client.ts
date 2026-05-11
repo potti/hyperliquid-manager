@@ -365,6 +365,8 @@ export const walletApi = {
   list: () => get('/api/v1/wallet/list'),
   // 创建钱包
   create: (name: string) => post('/api/v1/wallet/create', { name }),
+  // 注册或重试注册 Predict.fun
+  registerPredict: (id: string) => post(`/api/v1/wallet/${id}/register-predict`, {}),
   // 删除钱包
   delete: (id: string) => del(`/api/v1/wallet/${id}`),
 }

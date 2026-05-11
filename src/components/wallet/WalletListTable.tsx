@@ -6,7 +6,7 @@ import {
   DownloadOutlined,
   UploadOutlined,
   DeleteOutlined,
-  SwapOutlined,
+  ThunderboltOutlined,
 } from '@ant-design/icons'
 import DepositModal from '@/components/wallet/DepositModal'
 import WithdrawModal from '@/components/wallet/WithdrawModal'
@@ -117,6 +117,7 @@ export default function WalletListTable({ wallets, loading = false, onRefresh }:
   const [withdrawModalVisible, setWithdrawModalVisible] = useState(false)
   const [withdrawWallet, setWithdrawWallet] = useState<Wallet | null>(null)
   const [withdrawLoading, setWithdrawLoading] = useState(false)
+  const [predictRegisteringId, setPredictRegisteringId] = useState<string | null>(null)
 
   // 打开存款模态框
   const handleOpenDeposit = (wallet: Wallet) => {
@@ -190,6 +191,20 @@ export default function WalletListTable({ wallets, loading = false, onRefresh }:
     }
   }
 
+  const handleRegisterPredict = async (wallet: Wallet) => {
+    setPredictRegisteringId(wallet.id)
+    try {
+      await walletApi.registerPredict(wallet.id)
+      message.success('Predict.fun 注册成功')
+      onRefresh()
+    } catch (error: any) {
+      message.error(`Predict.fun 注册失败: ${error.message}`)
+      onRefresh()
+    } finally {
+      setPredictRegisteringId(null)
+    }
+  }
+
   const columns = [
     {
       title: '钱包名称',
@@ -242,7 +257,7 @@ export default function WalletListTable({ wallets, loading = false, onRefresh }:
     {
       title: 'Predict 状态',
       key: 'predict',
-      width: 120,
+      width: 150,
       render: (_: unknown, record: Wallet) => {
         const registered = record.predict_registered
         const error = record.predict_error
@@ -253,7 +268,18 @@ export default function WalletListTable({ wallets, loading = false, onRefresh }:
           return <Tag color="success">已注册</Tag>
         }
         return (
-          <Tag color="error" title={error}>未注册</Tag>
+          <Space size={6} wrap>
+            <Tag color="error" title={error}>未注册</Tag>
+            <Button
+              size="small"
+              type="link"
+              icon={<ThunderboltOutlined />}
+              loading={predictRegisteringId === record.id}
+              onClick={() => handleRegisterPredict(record)}
+            >
+              去注册
+            </Button>
+          </Space>
         )
       },
     },
