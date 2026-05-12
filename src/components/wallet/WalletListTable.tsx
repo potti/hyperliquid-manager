@@ -24,6 +24,7 @@ interface Wallet {
   withdrawable?: string | number
   is_registered?: boolean
   predict_registered?: boolean
+  predict_deposit_address?: string
   predict_error?: string
   hyperliquid?: {
     account_value: string | number
@@ -234,13 +235,6 @@ export default function WalletListTable({ wallets, loading = false, onRefresh }:
       render: (text: string) => <AddressText address={text} />,
     },
     {
-      title: '充值地址',
-      dataIndex: 'address',
-      key: 'deposit_address',
-      width: 220,
-      render: (text: string) => <AddressText address={text} compact />,
-    },
-    {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
@@ -274,9 +268,9 @@ export default function WalletListTable({ wallets, loading = false, onRefresh }:
       render: (_: unknown, record: Wallet) => formatPnL(record.hyperliquid?.unrealized_pnl),
     },
     {
-      title: 'Predict 状态',
+      title: 'Predict 充值地址',
       key: 'predict',
-      width: 150,
+      width: 220,
       render: (_: unknown, record: Wallet) => {
         const registered = record.predict_registered
         const error = record.predict_error
@@ -284,7 +278,7 @@ export default function WalletListTable({ wallets, loading = false, onRefresh }:
           return <Tag>未知</Tag>
         }
         if (registered) {
-          return <Tag color="success">已注册</Tag>
+          return <AddressText address={record.predict_deposit_address || record.address} compact />
         }
         return (
           <Space size={6} wrap>

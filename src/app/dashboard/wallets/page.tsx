@@ -21,6 +21,7 @@ interface Wallet {
   withdrawable?: string | number
   is_registered?: boolean
   predict_registered?: boolean
+  predict_deposit_address?: string
   predict_error?: string
   hyperliquid?: {
     account_value: string | number
