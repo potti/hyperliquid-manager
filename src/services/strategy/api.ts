@@ -9,10 +9,22 @@ import type {
 
 const PREFIX = '/api/v1/strategy'
 
+export interface CreateAccountParams {
+  name: string
+  wallet_id?: string
+  user_uuid?: string
+  strategy: string
+  enabled?: boolean
+  config?: Record<string, any>
+}
+
 export const strategyApi = {
   listAccounts: () => get<AccountState[]>(`${PREFIX}/accounts`),
 
   listAccountsEnriched: () => get<EnrichedAccount[]>(`${PREFIX}/accounts-enriched`),
+
+  createAccount: (params: CreateAccountParams) =>
+    post(`${PREFIX}/accounts`, params),
 
   getAccountSnapshot: (name: string) =>
     get<StrategySnapshot>(`${PREFIX}/accounts/${encodeURIComponent(name)}/snapshot`),

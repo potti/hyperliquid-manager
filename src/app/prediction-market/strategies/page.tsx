@@ -24,6 +24,7 @@ import {
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { strategyApi } from '@/services/strategy/api'
+import { signalApi } from '@/services/signals/api'
 import type {
   AccountState,
   StrategySnapshot,
@@ -138,6 +139,7 @@ export default function StrategiesPage() {
   const [selectedName, setSelectedName] = useState<string | undefined>()
   const [snapshot, setSnapshot] = useState<StrategySnapshot | null>(null)
   const [snapshotLoading, setSnapshotLoading] = useState(false)
+  const [recentSignals, setRecentSignals] = useState<any[]>([])
 
   const loadAccounts = useCallback(async () => {
     setAccountsLoading(true)
@@ -177,6 +179,25 @@ export default function StrategiesPage() {
       setSnapshot(null)
     }
   }, [selectedName, selectedAccount?.status, loadSnapshot])
+
+  // Poll signal log for the selected account
+  useEffect(() => {
+    if (!selectedName) {
+      setRecentSignals([])
+      return
+    }
+    const loadSignals = async () => {
+      try {
+        const signals = await signalApi.getSignals({ source: 'btc_prediction', limit: 20 })
+        setRecentSignals(Array.isArray(signals) ? signals : [])
+      } catch {
+        setRecentSignals([])
+      }
+    }
+    loadSignals()
+    const interval = setInterval(loadSignals, 30000)
+    return () => clearInterval(interval)
+  }, [selectedName])
 
   const handleSelect = (name: string) => {
     setSelectedName(name)
@@ -310,6 +331,44 @@ export default function StrategiesPage() {
               </Col>
             )}
           </Row>
+        </Card>
+      )}
+
+      {/* Signal trigger log */}
+      {selectedAccount && recentSignals.length > 0 && (
+        <Card title="Recent Signal Triggers" size="small" style={{ marginBottom: 16 }}>
+          <Table
+            dataSource={recentSignals.map((s: any, i: number) => ({ ...s, key: s.id || i }))}
+            columns={[
+              {
+                title: 'Time',
+                dataIndex: 'created_at',
+                key: 'created_at',
+                width: 180,
+                render: (t: string) => t ? new Date(t).toLocaleString() : '-',
+              },
+              { title: 'Source', dataIndex: 'source', key: 'source', width: 80 },
+              { title: 'Symbol', dataIndex: 'symbol', key: 'symbol', width: 70 },
+              {
+                title: 'Dir',
+                dataIndex: 'direction',
+                key: 'direction',
+                width: 60,
+                render: (d: string) => (
+                  <Tag color={d === 'buy' ? 'green' : 'red'}>{d}</Tag>
+                ),
+              },
+              {
+                title: 'Strength',
+                dataIndex: 'strength',
+                key: 'strength',
+                width: 80,
+                render: (s: number) => s ? `${(s * 100).toFixed(0)}%` : '-',
+              },
+            ]}
+            size="small"
+            pagination={{ pageSize: 5 }}
+          />
         </Card>
       )}
 

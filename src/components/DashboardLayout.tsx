@@ -15,6 +15,7 @@ import {
   CloseOutlined,
   LineChartOutlined,
   WalletOutlined,
+  PlusOutlined,
 } from '@ant-design/icons'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
@@ -146,6 +147,12 @@ export default function DashboardLayout({ children }: { children?: React.ReactNo
       icon: <RocketOutlined />,
       label: '策略账户管理',
       onClick: () => handleMenuClick('/dashboard/strategy-accounts'),
+    },
+    {
+      key: '/dashboard/strategy-create',
+      icon: <PlusOutlined />,
+      label: '创建策略',
+      onClick: () => handleMenuClick('/dashboard/strategy-create'),
     },
     {
       key: '/prediction-market',
