@@ -21,7 +21,7 @@ export default function StrategyCreatePage() {
   const router = useRouter()
 
   useEffect(() => {
-    walletApi.list().then((res: any) => setWallets(res || [])).catch(() => {})
+    walletApi.list().then((res: any) => setWallets(Array.isArray(res) ? res : [])).catch(() => {})
   }, [])
 
   const onFinish = async (values: any) => {
