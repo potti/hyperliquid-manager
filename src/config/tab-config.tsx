@@ -7,6 +7,7 @@ import {
   AppstoreOutlined,
   TagsOutlined,
   WalletOutlined,
+  ThunderboltOutlined,
 } from '@ant-design/icons'
 
 // 动态导入页面组件（避免在初始加载时加载所有页面，实现代码分割）
@@ -21,6 +22,7 @@ const MarketDailyMetricsPage = dynamic(() => import('@/app/dashboard/market-dail
 const TagsPage = dynamic(() => import('@/app/dashboard/management/tags/page'), { ssr: false })
 const WalletsPage = dynamic(() => import('@/app/dashboard/wallets/page'), { ssr: false })
 const StrategyAccountsPage = dynamic(() => import('@/app/dashboard/strategy-accounts/page'), { ssr: false })
+const BtcShorttermPage = dynamic(() => import('@/app/prediction-market/btc-shortterm/page'), { ssr: false })
 
 // Tab 配置映射
 export const tabConfigMap: Record<string, TabConfig> = {
@@ -99,10 +101,10 @@ export const tabConfigMap: Record<string, TabConfig> = {
   '/prediction-market/btc-shortterm': {
     key: '/prediction-market/btc-shortterm',
     label: 'BTC 短期策略',
-    component: StrategyAccountsPage, // placeholder, will be replaced in Phase 6
+    component: BtcShorttermPage,
     closable: true,
     singleton: true,
-    icon: <RocketOutlined />,
+    icon: <ThunderboltOutlined />,
   },
 }
 
