@@ -74,6 +74,7 @@ export default function WalletsPage() {
             (sum, w) => sum + toFiniteNumber(w.hyperliquid?.unrealized_pnl),
             0
           ),
+          predict_registered: list.filter((w) => w.predict_registered === true).length,
         }
         setStats(computed)
       }
@@ -120,9 +121,9 @@ export default function WalletsPage() {
     setStrategyLoading(true)
     try {
       await strategyApi.createAccount({
-        name: `btc_pred_${Date.now()}`,
+        name: `btc_short_${Date.now()}`,
         wallet_id: values.wallet_id,
-        strategy: 'btc_prediction',
+        strategy: 'btc_shortterm',
         enabled: true,
         config: {
           max_positions: values.max_positions,

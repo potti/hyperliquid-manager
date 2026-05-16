@@ -7,6 +7,7 @@ import {
   DollarOutlined,
   RiseOutlined,
   FallOutlined,
+  ThunderboltOutlined,
 } from '@ant-design/icons'
 
 interface WalletStats {
@@ -69,6 +70,15 @@ export default function WalletOverviewCards({ stats, loading = false }: WalletOv
             }
             suffix="USD"
             valueStyle={{ color: (stats?.total_pnl ?? 0) >= 0 ? '#52c41a' : '#ff4d4f' }}
+          />
+        </Card>
+      </Col>
+      <Col xs={24} sm={12} lg={6}>
+        <Card hoverable loading={loading}>
+          <Statistic
+            title="Predict.fun 注册"
+            value={stats?.predict_registered ?? 0}
+            prefix={<ThunderboltOutlined style={{ color: '#722ed1' }} />}
           />
         </Card>
       </Col>
