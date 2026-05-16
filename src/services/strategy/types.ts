@@ -2,6 +2,7 @@
 export interface AccountState {
   name: string
   address: string
+  wallet_id?: string
   status: 'idle' | 'running' | 'stopped' | 'error'
   strategy: string
   started_at?: string

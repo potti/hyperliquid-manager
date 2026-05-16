@@ -35,6 +35,12 @@ export const strategyApi = {
   getAccountPoints: (name: string, limit?: number) =>
     get<PointsSnapshot[]>(`${PREFIX}/accounts/${encodeURIComponent(name)}/points`, { limit }),
 
+  getAccountDashboard: (name: string) =>
+    get<any>(`${PREFIX}/accounts/${encodeURIComponent(name)}/dashboard`),
+
+  getBtcMarkets: (name: string) =>
+    get<any[]>(`${PREFIX}/accounts/${encodeURIComponent(name)}/btc-markets`),
+
   startAccount: (name: string) =>
     post(`${PREFIX}/accounts/${encodeURIComponent(name)}/start`),
 

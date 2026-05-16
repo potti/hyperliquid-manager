@@ -1,14 +1,13 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Card, Row, Col, Typography, Spin, Tag, Table, Empty } from 'antd'
+import { Card, Row, Col, Typography, Spin, Tag, Table, Empty, Tooltip } from 'antd'
 import {
   RiseOutlined,
   FallOutlined,
   ThunderboltOutlined,
   WalletOutlined,
 } from '@ant-design/icons'
-import { apiClient } from '@/lib/api-client'
 import { strategyApi } from '@/services/strategy/api'
 
 const { Title, Text } = Typography
@@ -65,42 +64,85 @@ interface DashboardData {
   updated_at: number
 }
 
+interface BtcMarketEvent {
+  id: number
+  title: string
+  question: string
+  yes_price: number
+  no_price: number
+  liquidity: number
+  volume: number
+  status: string
+  end_date: string
+  category_slug: string
+  outcomes: Array<{
+    name: string
+    best_bid: number
+    best_ask: number
+    bid_size: number
+    ask_size: number
+  }>
+}
+
 export default function BtcShorttermPage() {
   const [data, setData] = useState<DashboardData | null>(null)
+  const [btcMarkets, setBtcMarkets] = useState<BtcMarketEvent[]>([])
   const [loading, setLoading] = useState(true)
+  const [marketsLoading, setMarketsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null)
 
   const fetchDashboard = useCallback(async () => {
     try {
       const accounts = await strategyApi.listAccounts()
-      const accountsList = accounts as any[]
-      const btcAccount = accountsList.find(
-        (a: any) => a.strategy === 'btc_shortterm' && a.status === 'running'
+      const btcAccount = accounts.find(
+        (a) => a.strategy === 'btc_shortterm' && a.status === 'running'
       )
       if (!btcAccount) {
-        setError('No running BTC shortterm strategy account found')
-        setLoading(false)
+        if (!data) {
+          setError('No running BTC shortterm strategy account found')
+        }
         return
       }
-      const result = await apiClient<DashboardData>(
-        `/api/v1/strategy/accounts/${btcAccount.name}/dashboard`
-      )
+      const result = await strategyApi.getAccountDashboard(btcAccount.name)
       setData(result)
       setLastRefresh(new Date())
       setError(null)
     } catch (err: any) {
-      setError(err.message || 'Failed to load dashboard data')
+      if (!data) {
+        setError(err.message || 'Failed to load dashboard data')
+      }
     } finally {
       setLoading(false)
+    }
+  }, [data])
+
+  const fetchBtcMarkets = useCallback(async () => {
+    setMarketsLoading(true)
+    try {
+      const accounts = await strategyApi.listAccounts()
+      const btcAccount = accounts.find(
+        (a) => a.strategy === 'btc_shortterm' && a.status === 'running'
+      )
+      if (!btcAccount) return
+      const markets = await strategyApi.getBtcMarkets(btcAccount.name)
+      setBtcMarkets(markets || [])
+    } catch {
+      // markets API may not be available yet
+    } finally {
+      setMarketsLoading(false)
     }
   }, [])
 
   useEffect(() => {
     fetchDashboard()
-    const interval = setInterval(fetchDashboard, 30000)
+    fetchBtcMarkets()
+    const interval = setInterval(() => {
+      fetchDashboard()
+      fetchBtcMarkets()
+    }, 30000)
     return () => clearInterval(interval)
-  }, [fetchDashboard])
+  }, [fetchDashboard, fetchBtcMarkets])
 
   const getDirectionTag = (direction: string) => {
     if (direction === 'YES') {
@@ -151,6 +193,73 @@ export default function BtcShorttermPage() {
     { title: 'Status', dataIndex: 'status', key: 'status' },
   ]
 
+  const marketEventColumns = [
+    {
+      title: 'Market',
+      dataIndex: 'title',
+      key: 'title',
+      ellipsis: true,
+      render: (title: string, record: BtcMarketEvent) => (
+        <Tooltip title={record.question || title}>
+          <Text style={{ fontSize: 13 }}>{title}</Text>
+        </Tooltip>
+      ),
+    },
+    {
+      title: 'YES %',
+      key: 'yes_pct',
+      width: 100,
+      render: (_: any, record: BtcMarketEvent) => {
+        const pct = (record.yes_price * 100).toFixed(1)
+        return <Text style={{ color: '#52c41a', fontWeight: 500 }}>{pct}%</Text>
+      },
+    },
+    {
+      title: 'NO %',
+      key: 'no_pct',
+      width: 100,
+      render: (_: any, record: BtcMarketEvent) => {
+        const pct = (record.no_price * 100).toFixed(1)
+        return <Text style={{ color: '#ff4d4f', fontWeight: 500 }}>{pct}%</Text>
+      },
+    },
+    {
+      title: 'Liquidity',
+      dataIndex: 'liquidity',
+      key: 'liquidity',
+      width: 120,
+      render: (v: number) => `$${v.toFixed(0)}`,
+    },
+  ]
+
+  const expandedMarketRow = (record: BtcMarketEvent) => {
+    const outcomeColumns = [
+      { title: 'Option', dataIndex: 'name', key: 'name' },
+      {
+        title: 'Bid',
+        key: 'bid',
+        render: (_: any, o: BtcMarketEvent['outcomes'][0]) =>
+          o.best_bid > 0 ? `$${o.best_bid.toFixed(4)} × ${o.bid_size.toFixed(2)}` : '—',
+      },
+      {
+        title: 'Ask',
+        key: 'ask',
+        render: (_: any, o: BtcMarketEvent['outcomes'][0]) =>
+          o.best_ask > 0 ? `$${o.best_ask.toFixed(4)} × ${o.ask_size.toFixed(2)}` : '—',
+      },
+    ]
+    return (
+      <Table
+        dataSource={record.outcomes}
+        columns={outcomeColumns}
+        pagination={false}
+        size="small"
+        rowKey="name"
+        style={{ margin: '4px 0' }}
+      />
+    )
+  }
+
   return (
     <div style={{ padding: 24, background: '#f0f2f5', minHeight: '100vh' }}>
       {/* Header */}
@@ -170,14 +279,45 @@ export default function BtcShorttermPage() {
         </Card>
       )}
 
-      <Row gutter={[16, 16]}>
-        {/* TradingView Chart */}
-        <Col span={24}>
-          <Card title="BTC/USDT 实时K线" size="small">
+      {/* Row 1: K-line (left) + Predict.fun BTC Markets (right) */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+        <Col xs={24} lg={14}>
+          <Card title="BTC/USDT 实时K线" size="small" style={{ height: '100%' }}>
             <TradingViewWidget />
           </Card>
         </Col>
+        <Col xs={24} lg={10}>
+          <Card
+            title="BTC 短期预测市场事件"
+            size="small"
+            extra={marketsLoading ? <Spin size="small" /> : <Text type="secondary">{btcMarkets.length} markets</Text>}
+            style={{ height: '100%' }}
+          >
+            {btcMarkets.length > 0 ? (
+              <Table
+                dataSource={btcMarkets}
+                columns={marketEventColumns}
+                pagination={false}
+                size="small"
+                rowKey="id"
+                scroll={{ y: 340 }}
+                expandable={{
+                  expandedRowRender: expandedMarketRow,
+                  rowExpandable: (r) => r.outcomes && r.outcomes.length > 0,
+                }}
+              />
+            ) : (
+              <Empty
+                description={marketsLoading ? 'Loading markets...' : 'No BTC markets found'}
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+              />
+            )}
+          </Card>
+        </Col>
+      </Row>
 
+      {/* Row 2: Direction Predictions, Whale Indicators, Funding Rates */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
         {/* Direction Predictions */}
         <Col xs={24} lg={8}>
           <Card title="方向预测" size="small">
@@ -195,7 +335,7 @@ export default function BtcShorttermPage() {
                 ))}
               </div>
             ) : (
-              <Empty description="No predictions yet" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+              <Empty description="Waiting for signal data" image={Empty.PRESENTED_IMAGE_SIMPLE} />
             )}
           </Card>
         </Col>
@@ -229,7 +369,7 @@ export default function BtcShorttermPage() {
                 </Row>
               </div>
             ) : (
-              <Empty description="No whale data" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+              <Empty description="Waiting for whale data" image={Empty.PRESENTED_IMAGE_SIMPLE} />
             )}
           </Card>
         </Col>
@@ -246,12 +386,14 @@ export default function BtcShorttermPage() {
                 rowKey="source"
               />
             ) : (
-              <Empty description="No funding rate data" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+              <Empty description="Waiting for funding data" image={Empty.PRESENTED_IMAGE_SIMPLE} />
             )}
           </Card>
         </Col>
+      </Row>
 
-        {/* Positions */}
+      {/* Row 3: Positions */}
+      <Row gutter={[16, 16]}>
         <Col span={24}>
           <Card
             title={<><WalletOutlined /> 当前持仓 (Predict.fun)</>}
@@ -278,6 +420,9 @@ export default function BtcShorttermPage() {
 // TradingView Advanced Real-Time Chart Widget
 function TradingViewWidget() {
   useEffect(() => {
+    const existingContainer = document.getElementById('tv-chart-container')
+    if (existingContainer?.querySelector('iframe')) return
+
     const script = document.createElement('script')
     script.src = 'https://s3.tradingview.com/tv.js'
     script.async = true
@@ -298,7 +443,7 @@ function TradingViewWidget() {
           details: true,
           hotlist: true,
           calendar: false,
-          height: 400,
+          height: 420,
         })
       }
     }
@@ -309,5 +454,5 @@ function TradingViewWidget() {
     }
   }, [])
 
-  return <div id="tv-chart-container" style={{ height: 400 }} />
+  return <div id="tv-chart-container" style={{ height: 420 }} />
 }

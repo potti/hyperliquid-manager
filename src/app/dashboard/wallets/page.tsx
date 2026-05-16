@@ -44,6 +44,7 @@ interface WalletStats {
 export default function WalletsPage() {
   const [wallets, setWallets] = useState<Wallet[]>([])
   const [walletsLoading, setWalletsLoading] = useState(false)
+  const [strategies, setStrategies] = useState<any[]>([])
   const [stats, setStats] = useState<WalletStats | null>(null)
   const [statsLoading, setStatsLoading] = useState(false)
   const [createModalVisible, setCreateModalVisible] = useState(false)
@@ -52,6 +53,16 @@ export default function WalletsPage() {
   const [strategyModalVisible, setStrategyModalVisible] = useState(false)
   const [strategyLoading, setStrategyLoading] = useState(false)
   const [strategyForm] = Form.useForm()
+
+  // 获取策略账户列表（用于显示钱包关联策略）
+  const fetchStrategies = useCallback(async () => {
+    try {
+      const accounts = await strategyApi.listAccounts()
+      setStrategies(accounts || [])
+    } catch {
+      // silently fail, strategies are optional display
+    }
+  }, [])
 
   // 获取钱包列表
   const fetchWallets = useCallback(async () => {
@@ -136,6 +147,7 @@ export default function WalletsPage() {
       message.success('策略创建成功！')
       setStrategyModalVisible(false)
       strategyForm.resetFields()
+      fetchStrategies()
     } catch (error: any) {
       message.error(`创建策略失败: ${error.message}`)
     } finally {
@@ -146,6 +158,7 @@ export default function WalletsPage() {
   useEffect(() => {
     fetchWallets()
     fetchStats()
+    fetchStrategies()
   }, [])
 
   return (
@@ -191,10 +204,12 @@ export default function WalletsPage() {
       >
         <WalletListTable
           wallets={wallets}
+          strategies={strategies}
           loading={walletsLoading}
           onRefresh={() => {
             fetchWallets()
             fetchStats()
+            fetchStrategies()
           }}
         />
       </Card>

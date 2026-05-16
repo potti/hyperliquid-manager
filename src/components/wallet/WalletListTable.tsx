@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { Table, Button, Tag, Space, message, Popconfirm, Empty, Typography } from 'antd'
+
+const { Text } = Typography
 import {
   DownloadOutlined,
   UploadOutlined,
@@ -35,8 +37,16 @@ interface Wallet {
   }
 }
 
+interface StrategyInfo {
+  name: string
+  wallet_id?: string
+  strategy: string
+  status: string
+}
+
 interface WalletListTableProps {
   wallets: Wallet[]
+  strategies?: StrategyInfo[]
   loading?: boolean
   onRefresh: () => void
 }
@@ -124,7 +134,7 @@ const formatPnL = (value: string | number | undefined | null) => {
   return <span style={{ color, fontWeight: 500 }}>{formatted}</span>
 }
 
-export default function WalletListTable({ wallets, loading = false, onRefresh }: WalletListTableProps) {
+export default function WalletListTable({ wallets, strategies = [], loading = false, onRefresh }: WalletListTableProps) {
   const [depositModalVisible, setDepositModalVisible] = useState(false)
   const [depositWallet, setDepositWallet] = useState<Wallet | null>(null)
   const [depositLoading, setDepositLoading] = useState(false)
@@ -266,6 +276,30 @@ export default function WalletListTable({ wallets, loading = false, onRefresh }:
       sorter: (a: Wallet, b: Wallet) =>
         toFiniteNumber(a.hyperliquid?.unrealized_pnl) - toFiniteNumber(b.hyperliquid?.unrealized_pnl),
       render: (_: unknown, record: Wallet) => formatPnL(record.hyperliquid?.unrealized_pnl),
+    },
+    {
+      title: '关联策略',
+      key: 'strategies',
+      width: 160,
+      render: (_: unknown, record: Wallet) => {
+        const matchedStrategies = strategies.filter((s) => s.wallet_id === record.id)
+        if (matchedStrategies.length === 0) {
+          return <Text type="secondary" style={{ fontSize: 12 }}>—</Text>
+        }
+        return (
+          <Space size={4} wrap>
+            {matchedStrategies.map((s) => (
+              <Tag
+                key={s.name}
+                color={s.status === 'running' ? 'green' : 'default'}
+                style={{ margin: 0 }}
+              >
+                {s.strategy === 'btc_shortterm' ? 'BTC短期' : s.strategy}
+              </Tag>
+            ))}
+          </Space>
+        )
+      },
     },
     {
       title: 'Predict 充值地址',
