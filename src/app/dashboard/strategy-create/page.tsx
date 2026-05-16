@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   Form,
   Select,
@@ -14,6 +14,10 @@ import { useRouter } from 'next/navigation'
 import { walletApi } from '@/lib/api-client'
 import { strategyApi } from '@/services/strategy/api'
 
+function safeArray<T>(v: any): T[] {
+  return Array.isArray(v) ? v : []
+}
+
 export default function StrategyCreatePage() {
   const [form] = Form.useForm()
   const [wallets, setWallets] = useState<any[]>([])
@@ -21,8 +25,13 @@ export default function StrategyCreatePage() {
   const router = useRouter()
 
   useEffect(() => {
-    walletApi.list().then((res: any) => setWallets(Array.isArray(res) ? res : [])).catch(() => {})
+    walletApi.list().then((res: any) => setWallets(safeArray(res))).catch(() => {})
   }, [])
+
+  const activeWallets = useMemo(
+    () => safeArray(wallets).filter((w: any) => w.status === 'active'),
+    [wallets],
+  )
 
   const onFinish = async (values: any) => {
     setLoading(true)
@@ -74,14 +83,12 @@ export default function StrategyCreatePage() {
             rules={[{ required: true, message: 'Please select a wallet' }]}
           >
             <Select placeholder="Choose a wallet">
-              {wallets
-                .filter((w: any) => w.status === 'active')
-                .map((w: any) => (
-                  <Select.Option key={w.id || w._id} value={w.id || w._id}>
-                    {w.name || w.address?.slice(0, 10)}...
-                    — Balance: ${w.balance != null ? w.balance : '?'}
-                  </Select.Option>
-                ))}
+              {activeWallets.map((w: any) => (
+                <Select.Option key={w.id || w._id} value={w.id || w._id}>
+                  {w.name || w.address?.slice(0, 10)}...
+                  — Balance: ${w.balance != null ? w.balance : '?'}
+                </Select.Option>
+              ))}
             </Select>
           </Form.Item>
 
