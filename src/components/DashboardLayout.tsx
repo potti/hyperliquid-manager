@@ -147,49 +147,9 @@ export default function DashboardLayout({ children }: { children?: React.ReactNo
       label: '预测市场',
       children: [
         {
-          key: '/prediction-market/dashboard',
-          label: '概览仪表盘',
-          onClick: () => handleMenuClick('/prediction-market/dashboard'),
-        },
-        {
-          key: '/prediction-market/smartmoney',
-          label: '聪明钱跟单',
-          onClick: () => handleMenuClick('/prediction-market/smartmoney'),
-        },
-        {
-          key: '/prediction-market/arbitrage',
-          label: '套利机会扫描',
-          onClick: () => handleMenuClick('/prediction-market/arbitrage'),
-        },
-        {
-          key: '/prediction-market/markets',
-          label: '市场数据列表',
-          onClick: () => handleMenuClick('/prediction-market/markets'),
-        },
-        {
-          key: '/prediction-market/trades',
-          label: '交易历史记录',
-          onClick: () => handleMenuClick('/prediction-market/trades'),
-        },
-        {
-          key: '/prediction-market/settings',
-          label: '配置与策略',
-          onClick: () => handleMenuClick('/prediction-market/settings'),
-        },
-        {
-          key: '/prediction-market/monitoring',
-          label: '监控告警',
-          onClick: () => handleMenuClick('/prediction-market/monitoring'),
-        },
-        {
-          key: '/prediction-market/strategies',
-          label: '策略监控',
-          onClick: () => handleMenuClick('/prediction-market/strategies'),
-        },
-        {
-          key: '/prediction-market/signals',
-          label: '信号日志',
-          onClick: () => handleMenuClick('/prediction-market/signals'),
+          key: '/prediction-market/btc-shortterm',
+          label: 'BTC 短期策略',
+          onClick: () => handleMenuClick('/prediction-market/btc-shortterm'),
         },
       ],
     },
