@@ -41,6 +41,11 @@ export const strategyApi = {
   getBtcMarkets: (name: string) =>
     get<any[]>(`${PREFIX}/accounts/${encodeURIComponent(name)}/btc-markets`),
 
+  // Global cached BTC markets (no account required)
+  getCachedBtcMarkets: () => get<any[]>(`${PREFIX}/btc-markets`),
+
+  getBtcMarketDetail: (id: number) => get<any>(`${PREFIX}/btc-markets/${id}`),
+
   startAccount: (name: string) =>
     post(`${PREFIX}/accounts/${encodeURIComponent(name)}/start`),
 

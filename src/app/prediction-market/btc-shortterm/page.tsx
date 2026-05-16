@@ -58,6 +58,7 @@ interface DashboardData {
   account: { name: string; strategy: string; status: string; last_tick_at: string }
   predictions: PredictionData[]
   whale_activity: WhaleActivity | null
+  whale_activity_5m: WhaleActivity | null
   funding_rates: FundingRateEntry[]
   positions: PositionEntry[]
   capital: CapitalEntry
@@ -342,9 +343,33 @@ export default function BtcShorttermPage() {
 
         {/* Whale Indicators */}
         <Col xs={24} lg={8}>
-          <Card title="巨鲸指标 (60min)" size="small">
+          <Card title="巨鲸指标" size="small">
+            {data?.whale_activity_5m ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
+                <Text strong style={{ color: '#1677ff', fontSize: 13 }}>5分钟</Text>
+                <Row justify="space-between">
+                  <Text type="secondary">加仓巨鲸</Text>
+                  <Text strong>{data.whale_activity_5m.unique_addresses} 地址</Text>
+                </Row>
+                <Row justify="space-between">
+                  <Text type="secondary">净流向</Text>
+                  <Text strong style={{ color: data.whale_activity_5m.net_flow >= 0 ? '#52c41a' : '#ff4d4f' }}>
+                    {data.whale_activity_5m.net_flow >= 0 ? '+' : ''}{data.whale_activity_5m.net_flow.toFixed(2)} BTC
+                  </Text>
+                </Row>
+                <Row justify="space-between">
+                  <Text type="secondary">交易笔数</Text>
+                  <Text strong>{data.whale_activity_5m.trade_count}</Text>
+                </Row>
+                <Row justify="space-between">
+                  <Text type="secondary">买 / 卖</Text>
+                  <Text>{data.whale_activity_5m.buy_volume.toFixed(2)} / {data.whale_activity_5m.sell_volume.toFixed(2)} BTC</Text>
+                </Row>
+              </div>
+            ) : null}
             {data?.whale_activity ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {data.whale_activity_5m ? <Text strong style={{ color: '#8c8c8c', fontSize: 13 }}>60分钟</Text> : null}
                 <Row justify="space-between">
                   <Text type="secondary">加仓巨鲸</Text>
                   <Text strong>{data.whale_activity.unique_addresses} 地址</Text>
@@ -360,17 +385,14 @@ export default function BtcShorttermPage() {
                   <Text strong>{data.whale_activity.trade_count}</Text>
                 </Row>
                 <Row justify="space-between">
-                  <Text type="secondary">买入量</Text>
-                  <Text>{data.whale_activity.buy_volume.toFixed(2)} BTC</Text>
-                </Row>
-                <Row justify="space-between">
-                  <Text type="secondary">卖出量</Text>
-                  <Text>{data.whale_activity.sell_volume.toFixed(2)} BTC</Text>
+                  <Text type="secondary">买 / 卖</Text>
+                  <Text>{data.whale_activity.buy_volume.toFixed(2)} / {data.whale_activity.sell_volume.toFixed(2)} BTC</Text>
                 </Row>
               </div>
-            ) : (
+            ) : null}
+            {!data?.whale_activity && !data?.whale_activity_5m ? (
               <Empty description="Waiting for whale data" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-            )}
+            ) : null}
           </Card>
         </Col>
 
