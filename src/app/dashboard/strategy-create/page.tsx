@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState } from 'react'
 import {
   Form,
   Select,
@@ -11,34 +11,18 @@ import {
   message,
 } from 'antd'
 import { useRouter } from 'next/navigation'
-import { walletApi } from '@/lib/api-client'
 import { strategyApi } from '@/services/strategy/api'
-
-function safeArray<T>(v: any): T[] {
-  return Array.isArray(v) ? v : []
-}
 
 export default function StrategyCreatePage() {
   const [form] = Form.useForm()
-  const [wallets, setWallets] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const router = useRouter()
-
-  useEffect(() => {
-    walletApi.list().then((res: any) => setWallets(safeArray(res))).catch(() => {})
-  }, [])
-
-  const activeWallets = useMemo(
-    () => safeArray(wallets).filter((w: any) => w.status === 'active'),
-    [wallets],
-  )
 
   const onFinish = async (values: any) => {
     setLoading(true)
     try {
       await strategyApi.createAccount({
         name: `btc_pred_${Date.now()}`,
-        wallet_id: values.wallet_id,
         strategy: 'btc_prediction',
         enabled: true,
         config: {
@@ -77,21 +61,6 @@ export default function StrategyCreatePage() {
             max_hold_hours: 48,
           }}
         >
-          <Form.Item
-            name="wallet_id"
-            label="Select Wallet"
-            rules={[{ required: true, message: 'Please select a wallet' }]}
-          >
-            <Select placeholder="Choose a wallet">
-              {activeWallets.map((w: any) => (
-                <Select.Option key={w.id || w._id} value={w.id || w._id}>
-                  {w.name || w.address?.slice(0, 10)}...
-                  — Balance: ${w.balance != null ? w.balance : '?'}
-                </Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
-
           <Form.Item label="Strategy Type">
             <Select disabled value="btc_prediction">
               <Select.Option value="btc_prediction">
@@ -144,12 +113,6 @@ export default function StrategyCreatePage() {
           <Form.Item>
             <Button type="primary" htmlType="submit" loading={loading}>
               Create Strategy
-            </Button>
-            <Button
-              style={{ marginLeft: 8 }}
-              onClick={() => router.push('/dashboard/wallets')}
-            >
-              Go to Wallets
             </Button>
           </Form.Item>
         </Form>
