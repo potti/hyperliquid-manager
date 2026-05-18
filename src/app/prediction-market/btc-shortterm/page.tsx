@@ -121,13 +121,8 @@ export default function BtcShorttermPage() {
   const fetchBtcMarkets = useCallback(async () => {
     setMarketsLoading(true)
     try {
-      const accounts = await strategyApi.listAccounts()
-      const btcAccount = accounts.find(
-        (a) => a.strategy === 'btc_shortterm' && a.status === 'running'
-      )
-      if (!btcAccount) return
-      const markets = await strategyApi.getBtcMarkets(btcAccount.name)
-      setBtcMarkets(markets || [])
+      const result = await strategyApi.getCachedBtcMarkets()
+      setBtcMarkets(result?.events || [])
     } catch {
       // markets API may not be available yet
     } finally {
