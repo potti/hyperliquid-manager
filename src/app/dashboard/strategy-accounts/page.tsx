@@ -1,28 +1,11 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Card, Space, Table, Tag, Typography, message } from 'antd'
+import { Button, Card, Popconfirm, Space, Table, Tag, Typography, message } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { ReloadOutlined } from '@ant-design/icons'
-import { get } from '@/lib/api-client'
-
-type StrategyAccountStatus = 'running' | 'idle' | 'stopped' | 'error' | string
-
-export type StrategyAccountEnriched = {
-  address: string
-  status: StrategyAccountStatus
-  strategy_name?: string
-  balance_usdc?: number
-  points?: number
-  trade_count?: number
-  total_volume_usdc?: number
-  [key: string]: any
-}
-
-type AccountsEnrichedResponse =
-  | { accounts: StrategyAccountEnriched[]; total?: number }
-  | { data: StrategyAccountEnriched[] }
-  | StrategyAccountEnriched[]
+import { strategyApi } from '@/services/strategy/api'
+import type { EnrichedAccount } from '@/services/strategy/types'
 
 function formatAddress(addr?: string) {
   if (!addr) return '—'
@@ -31,7 +14,7 @@ function formatAddress(addr?: string) {
   return `${a.slice(0, 6)}...${a.slice(-4)}`
 }
 
-function statusTag(status: StrategyAccountStatus) {
+function statusTag(status: string) {
   const s = (status || '').toString().toLowerCase()
   const color =
     s === 'running'
@@ -53,25 +36,15 @@ function fmt2(v: any) {
 }
 
 export default function StrategyAccountsPage() {
-  const [rows, setRows] = useState<StrategyAccountEnriched[]>([])
+  const [rows, setRows] = useState<EnrichedAccount[]>([])
   const [loading, setLoading] = useState(false)
+  const [actingName, setActingName] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await get<AccountsEnrichedResponse>(
-        '/api/v1/strategy/accounts-enriched'
-      )
-
-      const accounts: StrategyAccountEnriched[] = Array.isArray(res)
-        ? res
-        : 'accounts' in (res as any)
-          ? ((res as any).accounts ?? [])
-          : 'data' in (res as any)
-            ? ((res as any).data ?? [])
-            : []
-
-      setRows(accounts)
+      const accounts = await strategyApi.listAccountsEnriched()
+      setRows(accounts || [])
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       message.error(`加载策略账户失败：${msg}`)
@@ -85,8 +58,40 @@ export default function StrategyAccountsPage() {
     load()
   }, [load])
 
-  const columns: ColumnsType<StrategyAccountEnriched> = useMemo(
+  const handleStart = useCallback(async (name: string) => {
+    setActingName(name)
+    try {
+      await strategyApi.startAccount(name)
+      message.success(`账户 ${name} 已启动`)
+      await load()
+    } catch (err: any) {
+      message.error(`启动失败：${err.message || err}`)
+    } finally {
+      setActingName(null)
+    }
+  }, [load])
+
+  const handleStop = useCallback(async (name: string) => {
+    setActingName(name)
+    try {
+      await strategyApi.stopAccount(name)
+      message.success(`账户 ${name} 已停止`)
+      await load()
+    } catch (err: any) {
+      message.error(`停止失败：${err.message || err}`)
+    } finally {
+      setActingName(null)
+    }
+  }, [load])
+
+  const columns: ColumnsType<EnrichedAccount> = useMemo(
     () => [
+      {
+        title: '账户名称',
+        dataIndex: 'name',
+        width: 160,
+        ellipsis: true,
+      },
       {
         title: '钱包地址',
         dataIndex: 'address',
@@ -99,18 +104,18 @@ export default function StrategyAccountsPage() {
       {
         title: '状态',
         dataIndex: 'status',
-        width: 120,
-        render: (v: StrategyAccountStatus) => statusTag(v),
+        width: 100,
+        render: (v: string) => statusTag(v),
       },
       {
         title: '策略名称',
-        dataIndex: 'strategy_name',
+        dataIndex: 'strategy',
         ellipsis: true,
         render: (v: string) => v || '—',
       },
       {
         title: '余额(USDC)',
-        dataIndex: 'balance_usdc',
+        dataIndex: 'balance',
         align: 'right',
         width: 140,
         render: (v: number) => fmt2(v),
@@ -131,7 +136,7 @@ export default function StrategyAccountsPage() {
       },
       {
         title: '总交易量',
-        dataIndex: 'total_volume_usdc',
+        dataIndex: 'total_volume',
         align: 'right',
         width: 140,
         render: (v: number) => fmt2(v),
@@ -140,29 +145,42 @@ export default function StrategyAccountsPage() {
         title: '操作',
         key: 'action',
         fixed: 'right',
-        width: 140,
+        width: 160,
         render: (_, record) => {
           const s = (record.status || '').toString().toLowerCase()
           const isRunning = s === 'running'
+          const isBusy = actingName === record.name
           return (
             <Space>
-              <Button
-                size="small"
-                type={isRunning ? 'default' : 'primary'}
-                danger={isRunning}
-                disabled={s === 'error'}
-                onClick={() => {
-                  message.info('启动/停止接口尚未接入（仅展示 UI）')
-                }}
-              >
-                {isRunning ? '停止' : '启动'}
-              </Button>
+              {isRunning ? (
+                <Popconfirm
+                  title="确认停止"
+                  description={`确定要停止账户「${record.name}」吗？`}
+                  onConfirm={() => handleStop(record.name)}
+                  okText="停止"
+                  cancelText="取消"
+                >
+                  <Button size="small" danger loading={isBusy}>
+                    停止
+                  </Button>
+                </Popconfirm>
+              ) : (
+                <Button
+                  size="small"
+                  type="primary"
+                  loading={isBusy}
+                  disabled={s === 'error'}
+                  onClick={() => handleStart(record.name)}
+                >
+                  启动
+                </Button>
+              )}
             </Space>
           )
         },
       },
     ],
-    []
+    [actingName, handleStart, handleStop]
   )
 
   return (
@@ -174,13 +192,13 @@ export default function StrategyAccountsPage() {
         </Button>
       }
     >
-      <Table<StrategyAccountEnriched>
-        rowKey={(r) => r.address}
+      <Table<EnrichedAccount>
+        rowKey={(r) => r.name || r.address}
         loading={loading}
         columns={columns}
         dataSource={rows}
         pagination={{ pageSize: 20, showSizeChanger: true }}
-        scroll={{ x: 1100 }}
+        scroll={{ x: 1200 }}
       />
     </Card>
   )
